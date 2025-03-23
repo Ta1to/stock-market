@@ -33,7 +33,7 @@
 
 <script>
 import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, collection, addDoc, doc, getDoc } from "firebase/firestore";
+import { getFirestore, collection, addDoc, doc, getDoc, updateDoc, arrayUnion, getDocs, query, where } from "firebase/firestore";
 
 export default {
   name: 'HomeView',
@@ -58,9 +58,35 @@ export default {
     closeJoinGameModal() {
       this.showJoinGameModal = false;
     },
-    joinGame() {
-      // Implement join game logic here
-      console.log("Joining game with code:", this.joinCode);
+    async joinGame() {
+      const db = getFirestore();
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const gameQuery = collection(db, "games");
+            const gameSnapshot = await getDocs(query(gameQuery, where("code", "==", this.joinCode)));
+            if (!gameSnapshot.empty) {
+              const gameDoc = gameSnapshot.docs[0];
+              const gameId = gameDoc.id;
+              await updateDoc(doc(db, "games", gameId), {
+                players: arrayUnion({ uid: user.uid, username: userData.username })
+              });
+              console.log(`User ${userData.username} joined the game with code: ${this.joinCode}`);
+              this.$router.push(`/lobby/${gameId}`);
+            } else {
+              console.error("No game found with the provided code!");
+            }
+          } else {
+            console.error("No such user document!");
+          }
+        } catch (e) {
+          console.error("Error joining game: ", e);
+        }
+      }
       this.closeJoinGameModal();
     },
     async createGame() {
@@ -76,7 +102,7 @@ export default {
               const docRef = await addDoc(collection(db, "games"), {
                 creator: user.uid,
                 createdAt: new Date(),
-                code: Math.random().toString(36).substr(2, 9),
+                code: Math.random().toString(36).substr(2, 5),
                 players: [{ uid: user.uid, username: userData.username }]
               });
               console.log("Game created with ID: ", docRef.id);

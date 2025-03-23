@@ -1,14 +1,15 @@
 <template>
   <div class="min-h-screen flex flex-col items-center justify-center bg-dark text-white font-stock">
     <div class="bg-dark-light p-8 rounded-lg shadow-lg w-full max-w-md text-center">
-      <h1 class="text-2xl mb-6">Lobby</h1>
+      <h1 class="text-2xl mb-2">Lobby</h1>
+      <p class="text-lg mb-6">Join Code: {{ joinCode }}</p>
       <ul class="mb-6">
         <li v-for="user in users" :key="user.uid" class="flex items-center justify-between p-2 bg-gray-700 rounded mb-2">
           <span>{{ user.username }}</span>
           <i v-if="user.uid === creator" class="fas fa-crown text-yellow-500"></i>
         </li>
       </ul>
-      <button @click="deleteGame" class="w-full p-2 bg-red-500 rounded shadow-lg hover:bg-red-700 flex items-center justify-center">
+      <button v-if="isCreator" @click="deleteGame" class="w-full p-2 bg-red-500 rounded shadow-lg hover:bg-red-700 flex items-center justify-center">
         <i class="fas fa-trash-alt mr-2"></i> Delete Game
       </button>
     </div>
@@ -17,14 +18,16 @@
 
 <script>
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, doc, deleteDoc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, deleteDoc, getDoc, onSnapshot } from "firebase/firestore";
 
 export default {
   name: 'LobbyView',
   data() {
     return {
       users: [],
-      creator: ''
+      creator: '',
+      joinCode: '',
+      isCreator: false
     };
   },
   methods: {
@@ -46,7 +49,9 @@ export default {
       if (gameDoc.exists()) {
         const gameData = gameDoc.data();
         this.creator = gameData.creator;
+        this.joinCode = gameData.code;
         this.users = gameData.players;
+        this.checkIfCreator();
       }
     },
     async fetchGameDetails() {
@@ -55,6 +60,15 @@ export default {
       const gameDoc = await getDoc(doc(db, "games", gameId));
       if (gameDoc.exists()) {
         this.creator = gameDoc.data().creator;
+        this.joinCode = gameDoc.data().code;
+        this.checkIfCreator();
+      }
+    },
+    checkIfCreator() {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user && user.uid === this.creator) {
+        this.isCreator = true;
       }
     }
   },
@@ -67,6 +81,22 @@ export default {
     });
     await this.fetchGameDetails();
     await this.fetchUsers();
+
+    const db = getFirestore();
+    const gameId = this.$route.params.id;
+    onSnapshot(doc(db, "games", gameId), (doc) => {
+      if (doc.exists()) {
+        const gameData = doc.data();
+        this.users = gameData.players;
+        console.log(`User joined the game: ${gameData.players[gameData.players.length - 1].username}`);
+      } else {
+        console.log("Game document does not exist, redirecting to home.");
+        this.$router.push('/');
+      }
+    }, (error) => {
+      console.log("Error fetching game document:", error);
+      this.$router.push('/');
+    });
   }
 }
 </script>
