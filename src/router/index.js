@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
 import LoginView from '../views/LoginView.vue';
 import RegisterView from '../views/RegisterView.vue';
+import LobbyView from '../views/LobbyView.vue';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 const routes = [
@@ -20,6 +21,11 @@ const routes = [
     path: '/register',
     name: 'Register',
     component: RegisterView
+  },
+  {
+    path: '/lobby/:id',
+    name: 'Lobby',
+    component: LobbyView
   }
 ];
 

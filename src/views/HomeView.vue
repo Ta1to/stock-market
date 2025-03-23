@@ -1,23 +1,31 @@
 <template>
   <div class="min-h-screen flex flex-col items-center justify-center bg-dark text-white font-stock">
     <div class="w-full flex justify-end p-4">
-      <button @click="logout" class="p-2 bg-red-500 rounded hover:bg-red-700">Logout</button>
+      <button @click="logout" class="p-2 bg-red-500 rounded shadow-lg hover:bg-red-700 flex items-center">
+        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+      </button>
     </div>
     <div class="bg-dark-light p-8 rounded-lg shadow-lg w-full max-w-md text-center">
       <h1 class="text-2xl mb-6">Home View</h1>
-      <div class="mb-4">
-        <button @click="showJoinGame" class="w-full p-2 bg-blue-500 rounded hover:bg-blue-700">Join Game</button>
-      </div>
-      <div>
-        <button @click="createGame" class="w-full p-2 bg-green-500 rounded hover:bg-green-700">Create Game</button>
+      <div class="flex space-x-4">
+        <div class="bg-gray-800 p-4 rounded-lg shadow-lg w-1/2">
+          <button @click="showJoinGame" class="w-full p-2 bg-blue-500 rounded shadow-lg hover:bg-blue-700 flex items-center justify-center">
+            <i class="fas fa-sign-in-alt mr-2"></i> Join Game
+          </button>
+        </div>
+        <div class="bg-gray-800 p-4 rounded-lg shadow-lg w-1/2">
+          <button @click="createGame" class="w-full p-2 bg-green-500 rounded shadow-lg hover:bg-green-700 flex items-center justify-center">
+            <i class="fas fa-plus mr-2"></i> Create Game
+          </button>
+        </div>
       </div>
     </div>
     <div v-if="showJoinGameModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div class="bg-dark-light p-8 rounded-lg shadow-lg w-full max-w-md text-center">
         <h2 class="text-xl mb-4">Join Game</h2>
         <input v-model="joinCode" type="text" placeholder="Enter game code" class="w-full p-2 mb-4 bg-gray-700 rounded">
-        <button @click="joinGame" class="w-full p-2 bg-blue-500 rounded hover:bg-blue-700">Join</button>
-        <button @click="closeJoinGameModal" class="w-full p-2 mt-2 bg-red-500 rounded hover:bg-red-700">Cancel</button>
+        <button @click="joinGame" class="w-full p-2 bg-blue-500 rounded shadow-lg hover:bg-blue-700">Join</button>
+        <button @click="closeJoinGameModal" class="w-full p-2 mt-2 bg-red-500 rounded shadow-lg hover:bg-red-700">Cancel</button>
       </div>
     </div>
   </div>
@@ -25,7 +33,7 @@
 
 <script>
 import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { getFirestore, collection, addDoc, doc, getDoc } from "firebase/firestore";
 
 export default {
   name: 'HomeView',
@@ -61,13 +69,24 @@ export default {
       const user = auth.currentUser;
       if (user) {
         try {
-          const docRef = await addDoc(collection(db, "games"), {
-            creator: user.uid,
-            createdAt: new Date(),
-            code: Math.random().toString(36).substr(2, 9)
-          });
-          console.log("Game created with ID: ", docRef.id);
-          this.$router.push(`/lobby/${docRef.id}`);
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (userData.username) {
+              const docRef = await addDoc(collection(db, "games"), {
+                creator: user.uid,
+                createdAt: new Date(),
+                code: Math.random().toString(36).substr(2, 9),
+                players: [{ uid: user.uid, username: userData.username }]
+              });
+              console.log("Game created with ID: ", docRef.id);
+              this.$router.push(`/lobby/${docRef.id}`);
+            } else {
+              console.error("User document does not have a username field!");
+            }
+          } else {
+            console.error("No such user document!");
+          }
         } catch (e) {
           console.error("Error adding document: ", e);
         }
@@ -84,3 +103,7 @@ export default {
   }
 }
 </script>
+
+<style>
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+</style>
