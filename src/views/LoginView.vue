@@ -1,13 +1,57 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-dark text-white font-stock">
-    <div class="bg-dark-light p-8 rounded-lg shadow-lg w-full max-w-md">
-      <h1 class="text-2xl mb-6">Login</h1>
-      <input v-model="email" type="email" placeholder="Email" class="w-full p-2 mb-4 bg-dark-lighter rounded" />
-      <input v-model="password" type="password" placeholder="Password" class="w-full p-2 mb-4 bg-dark-lighter rounded" />
-      <button @click="login" class="w-full p-2 bg-blue-500 rounded hover:bg-blue-700">Login</button>
-      <p class="mt-4">Don't have an account? <router-link to="/register" class="text-blue-400">Register</router-link></p>
-    </div>
-  </div>
+  <v-container
+    class="fill-height d-flex align-center justify-center"
+  >
+    <v-card
+      elevation="8"
+      max-width="400"
+      class="pa-6"
+    >
+      <v-card-title class="text-h5">
+        Login
+      </v-card-title>
+      
+      <v-divider class="my-2"></v-divider>
+
+      <v-card-text>
+        <v-form @submit.prevent="login">
+          <v-text-field
+            v-model="email"
+            label="E-Mail"
+            type="email"
+            required
+            outlined
+            dense
+            class="mb-4"
+          ></v-text-field>
+          
+          <v-text-field
+            v-model="password"
+            label="Passwort"
+            type="password"
+            required
+            outlined
+            dense
+            class="mb-4"
+          ></v-text-field>
+          
+          <v-btn
+            type="submit"
+            color="primary"
+            block
+          >
+            Einloggen
+          </v-btn>
+        </v-form>
+      </v-card-text>
+
+      <v-card-actions class="justify-center">
+        <router-link to="/register" class="text-center w-full mt-4">
+          Du hast noch kein Konto? Jetzt registrieren
+        </router-link>
+      </v-card-actions>
+    </v-card>
+  </v-container>
 </template>
 
 <script>
@@ -22,17 +66,22 @@ export default {
     };
   },
   methods: {
-    login() {
+    async login() {
       const auth = getAuth();
-      signInWithEmailAndPassword(auth, this.email, this.password)
-        .then((userCredential) => {
-          console.log("User logged in: ", userCredential.user);
-          this.$router.push('/');
-        })
-        .catch((error) => {
-          console.error("Error logging in: ", error);
-        });
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, this.email, this.password);
+        console.log("User logged in:", userCredential.user);
+        this.$router.push('/');
+      } catch (error) {
+        console.error("Fehler beim Login:", error);
+      }
     }
   }
 }
 </script>
+
+<style scoped>
+.v-application {
+  background-color: #121212 !important; /* Dunkler Hintergrund */
+}
+</style>

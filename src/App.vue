@@ -1,8 +1,11 @@
 <template>
-  <div id="app" class="bg-dark text-white font-stock min-h-screen">
-    <router-view></router-view>
-  </div>
+  <v-app>
+    <v-main>
+      <router-view />
+    </v-main>
+  </v-app>
 </template>
+
 
 <script>
 export default {
@@ -16,6 +19,6 @@ export default {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: #ffffff;
+  color: grey;
 }
 </style>
