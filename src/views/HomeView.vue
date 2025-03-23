@@ -19,6 +19,8 @@
           </button>
         </div>
       </div>
+      <button @click="fetchStockPrice">Get Stock Price</button>
+      <p v-if="stockPrice">Current Stock Price: {{ stockPrice }}</p>
     </div>
     <div v-if="showJoinGameModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div class="bg-dark-light p-8 rounded-lg shadow-lg w-full max-w-md text-center">
@@ -34,13 +36,15 @@
 <script>
 import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, collection, addDoc, doc, getDoc, updateDoc, arrayUnion, getDocs, query, where } from "firebase/firestore";
+import { getStockPrice } from '../api/stock'; // Updated import path to stock.js
 
 export default {
   name: 'HomeView',
   data() {
     return {
       showJoinGameModal: false,
-      joinCode: ''
+      joinCode: '',
+      stockPrice: null, // Ensure stockPrice is defined
     };
   },
   methods: {
@@ -116,6 +120,13 @@ export default {
         } catch (e) {
           console.error("Error adding document: ", e);
         }
+      }
+    },
+    async fetchStockPrice() {
+      try {
+        this.stockPrice = await getStockPrice('AAPL'); // Example stock symbol
+      } catch (error) {
+        console.error('Error fetching stock price:', error.message);
       }
     }
   },
