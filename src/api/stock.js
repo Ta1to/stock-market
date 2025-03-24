@@ -28,23 +28,36 @@ export const getStockPrice = async (symbol) => {
     }
 };
 
-export const getStockData = async (symbol, days) => {
+export const getStockData = async (symbol, months = 12) => {
     try {
         const response = await axios.get(BASE_URL, {
             params: {
-                function: 'TIME_SERIES_DAILY',
+                function: 'TIME_SERIES_MONTHLY',
                 symbol,
                 apikey: API_KEY,
             },
         });
         const data = response.data;
         console.log('API response:', data);
-        if (!data || !data['Time Series (Daily)']) {
+        if (!data || !data['Monthly Time Series']) {
             throw new Error('Invalid response format');
         }
-        const timeSeries = data['Time Series (Daily)'];
-        const dates = Object.keys(timeSeries).slice(0, days).reverse();
-        const prices = dates.map(date => timeSeries[date]['1. open']);
+        const timeSeries = data['Monthly Time Series'];
+        const dates = Object.keys(timeSeries)
+            .slice(0, months)
+            .reverse()
+            .map(date => {
+                const d = new Date(date);
+                return new Intl.DateTimeFormat('en-US', {
+                    month: 'short',
+                    year: '2-digit'
+                }).format(d);
+            });
+        const prices = Object.keys(timeSeries)
+            .slice(0, months)
+            .reverse()
+            .map(date => parseFloat(timeSeries[date]['1. open']));
+        
         return { dates, prices };
     } catch (error) {
         console.error('Error fetching stock data:', error);

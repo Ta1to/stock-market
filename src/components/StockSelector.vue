@@ -12,8 +12,17 @@
 </template>
 
 <script>
+import { doc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { db } from '../api/firebase';
+
 export default {
   name: 'StockSelector',
+  props: {
+    gameId: {
+      type: String,
+      required: true
+    }
+  },
   data() {
     return {
       stocks: ['AAPL', 'GOOGL', 'AMZN', 'MSFT', 'TSLA'],
@@ -21,15 +30,28 @@ export default {
       selectedStock: ''
     };
   },
+  created() {
+    const gameDoc = doc(db, 'games', this.gameId);
+    onSnapshot(gameDoc, (doc) => {
+      if (doc.exists()) {
+        const data = doc.data();
+        this.displayedStocks = [data.selectedStock];
+        this.selectedStock = data.selectedStock;
+      }
+    });
+  },
   methods: {
     spin() {
       const interval = setInterval(() => {
         this.displayedStocks = [this.stocks[Math.floor(Math.random() * this.stocks.length)]];
       }, 100);
 
-      setTimeout(() => {
+      setTimeout(async () => {
         clearInterval(interval);
         this.selectedStock = this.displayedStocks[0];
+        await updateDoc(doc(db, 'games', this.gameId), {
+          selectedStock: this.selectedStock
+        });
         this.$emit('stock-selected', this.selectedStock);
       }, 3000); // Spin for 3 seconds
     }
