@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue';
 import LoginView from '../views/LoginView.vue';
 import RegisterView from '../views/RegisterView.vue';
 import LobbyView from '../views/LobbyView.vue';
+import GameView from '../views/GameView.vue';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 const routes = [
@@ -26,6 +27,11 @@ const routes = [
     path: '/lobby/:id',
     name: 'Lobby',
     component: LobbyView
+  },
+  {
+    path: '/game/:id',
+    name: 'Game',
+    component: GameView
   }
 ];
 

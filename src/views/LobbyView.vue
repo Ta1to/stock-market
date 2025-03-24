@@ -12,13 +12,16 @@
       <button v-if="isCreator" @click="deleteGame" class="w-full p-2 bg-red-500 rounded shadow-lg hover:bg-red-700 flex items-center justify-center">
         <i class="fas fa-trash-alt mr-2"></i> Delete Game
       </button>
+      <button v-if="isCreator" @click="startGame" class="w-full p-2 bg-green-500 rounded shadow-lg hover:bg-green-700 flex items-center justify-center mt-4">
+        <i class="fas fa-play mr-2"></i> Start Game
+      </button>
     </div>
   </div>
 </template>
 
 <script>
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, doc, deleteDoc, getDoc, onSnapshot } from "firebase/firestore";
+import { getFirestore, doc, deleteDoc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
 
 export default {
   name: 'LobbyView',
@@ -27,7 +30,8 @@ export default {
       users: [],
       creator: '',
       joinCode: '',
-      isCreator: false
+      isCreator: false,
+      gameState: ''
     };
   },
   methods: {
@@ -40,6 +44,19 @@ export default {
         this.$router.push('/');
       } catch (e) {
         console.error("Error deleting document: ", e);
+      }
+    },
+    async startGame() {
+      const db = getFirestore();
+      const gameId = this.$route.params.id;
+      try {
+        await updateDoc(doc(db, "games", gameId), {
+          state: 'started',
+          round: 1
+        });
+        this.$router.push(`/game/${gameId}`);
+      } catch (e) {
+        console.error("Error starting game: ", e);
       }
     },
     async fetchUsers() {
@@ -61,6 +78,7 @@ export default {
       if (gameDoc.exists()) {
         this.creator = gameDoc.data().creator;
         this.joinCode = gameDoc.data().code;
+        this.gameState = gameDoc.data().state;
         this.checkIfCreator();
       }
     },
@@ -88,6 +106,10 @@ export default {
       if (doc.exists()) {
         const gameData = doc.data();
         this.users = gameData.players;
+        this.gameState = gameData.state;
+        if (this.gameState === 'started') {
+          this.$router.push(`/game/${gameId}`);
+        }
         console.log(`User joined the game: ${gameData.players[gameData.players.length - 1].username}`);
       } else {
         console.log("Game document does not exist, redirecting to home.");
