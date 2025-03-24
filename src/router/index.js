@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
-import LoginView from '../views/LoginView.vue';
-import RegisterView from '../views/RegisterView.vue';
+import LoginView from '../views/auth/LoginView.vue';
+import RegisterView from '../views/auth/RegisterView.vue';
 import LobbyView from '../views/LobbyView.vue';
 import GameView from '../views/GameView.vue';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
@@ -16,22 +16,26 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: LoginView
+    component: LoginView,
+    meta: { requiresAuth: false }
   },
   {
     path: '/register',
     name: 'Register',
-    component: RegisterView
+    component: RegisterView,
+    meta: { requiresAuth: false }
   },
   {
     path: '/lobby/:id',
     name: 'Lobby',
-    component: LobbyView
+    component: LobbyView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/game/:id',
     name: 'Game',
-    component: GameView
+    component: GameView,
+    meta: { requiresAuth: true }
   }
 ];
 
