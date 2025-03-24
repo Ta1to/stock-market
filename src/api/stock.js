@@ -1,13 +1,12 @@
 import axios from 'axios';
 
-const API_KEY = "7J4SSSGH7LBAV1BT";
-const BASE_URL = 'https://www.alphavantage.co/query';
+const API_KEY = "0bcd08147d344c59af873d72bd752c38";
+const BASE_URL = 'https://api.twelvedata.com';
 
 export const getStockPrice = async (symbol) => {
     try {
-        const response = await axios.get(BASE_URL, {
+        const response = await axios.get(`${BASE_URL}/time_series`, {
             params: {
-                function: 'TIME_SERIES_INTRADAY',
                 symbol,
                 interval: '1min',
                 apikey: API_KEY,
@@ -15,12 +14,10 @@ export const getStockPrice = async (symbol) => {
         });
         const data = response.data;
         console.log('API response:', data);
-        if (!data || !data['Time Series (1min)']) {
+        if (!data || !data.values) {
             throw new Error('Invalid response format');
         }
-        const timeSeries = data['Time Series (1min)'];
-        const latestTime = Object.keys(timeSeries)[0];
-        const latestPrice = timeSeries[latestTime]['1. open'];
+        const latestPrice = data.values[0].open;
         return latestPrice;
     } catch (error) {
         console.error('Error fetching stock price:', error);
@@ -28,35 +25,39 @@ export const getStockPrice = async (symbol) => {
     }
 };
 
-export const getStockData = async (symbol, months = 12) => {
+export const getStockData = async (symbol) => {
     try {
-        const response = await axios.get(BASE_URL, {
+        const response = await axios.get(`${BASE_URL}/time_series`, {
             params: {
-                function: 'TIME_SERIES_MONTHLY',
                 symbol,
+                interval: '1month',
+                outputsize: '12',
                 apikey: API_KEY,
             },
         });
         const data = response.data;
         console.log('API response:', data);
-        if (!data || !data['Monthly Time Series']) {
+        if (!data || !data.values) {
             throw new Error('Invalid response format');
         }
-        const timeSeries = data['Monthly Time Series'];
-        const dates = Object.keys(timeSeries)
-            .slice(0, months)
+        const timeSeries = data.values;
+        const dates = timeSeries
             .reverse()
-            .map(date => {
-                const d = new Date(date);
+            .map(entry => {
+                const d = new Date(entry.datetime);
+                console.log('Parsed date:', d);
+                if (isNaN(d)) {
+                    console.error('Invalid date value:', entry.datetime);
+                    throw new Error('Invalid date value');
+                }
                 return new Intl.DateTimeFormat('en-US', {
                     month: 'short',
                     year: '2-digit'
                 }).format(d);
             });
-        const prices = Object.keys(timeSeries)
-            .slice(0, months)
+        const prices = timeSeries
             .reverse()
-            .map(date => parseFloat(timeSeries[date]['1. open']));
+            .map(entry => parseFloat(entry.open));
         
         return { dates, prices };
     } catch (error) {

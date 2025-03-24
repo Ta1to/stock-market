@@ -2,12 +2,11 @@
   <div class="stock-selector">
     <div class="slot-machine">
       <transition-group name="slide" tag="div" class="slot">
-        <div v-for="(stock, index) in displayedStocks" :key="index" class="stock">
-          {{ stock }}
+        <div :key="displayedStock" class="stock">
+          {{ displayedStock }}
         </div>
       </transition-group>
     </div>
-    <button @click="spin" class="spin-button">Spin</button>
   </div>
 </template>
 
@@ -18,45 +17,61 @@ import { db } from '../api/firebase';
 export default {
   name: 'StockSelector',
   props: {
-    gameId: {
-      type: String,
-      required: true
-    }
+    gameId: String,
+    isCreator: Boolean // Nur Creator führt Spin aus
   },
   data() {
     return {
       stocks: ['AAPL', 'GOOGL', 'AMZN', 'MSFT', 'TSLA'],
-      displayedStocks: ['AAPL'],
-      selectedStock: ''
+      displayedStock: 'AAPL',
+      spinning: false,
     };
   },
   created() {
     const gameDoc = doc(db, 'games', this.gameId);
-    onSnapshot(gameDoc, (doc) => {
-      if (doc.exists()) {
-        const data = doc.data();
-        this.displayedStocks = [data.selectedStock];
-        this.selectedStock = data.selectedStock;
+
+    onSnapshot(gameDoc, (snapshot) => {
+      const data = snapshot.data();
+      if (data) {
+        if (data.isSpinning && !this.spinning) {
+          this.startSpin(data.selectedStock);
+        } else if (!data.isSpinning) {
+          this.displayedStock = data.selectedStock;
+        }
       }
     });
   },
   methods: {
-    spin() {
-      const interval = setInterval(() => {
-        this.displayedStocks = [this.stocks[Math.floor(Math.random() * this.stocks.length)]];
-      }, 100);
+    async initiateSpin() {
+      if (!this.isCreator) return;
+
+      const finalStock = this.stocks[Math.floor(Math.random() * this.stocks.length)];
+
+      await updateDoc(doc(db, 'games', this.gameId), {
+        isSpinning: true,
+        selectedStock: finalStock,
+        lastSpinTime: Date.now()
+      });
 
       setTimeout(async () => {
+        await updateDoc(doc(db, 'games', this.gameId), { isSpinning: false });
+      }, 3000);
+    },
+    startSpin(finalStock) {
+      this.spinning = true;
+      const interval = setInterval(() => {
+        this.displayedStock = this.stocks[Math.floor(Math.random() * this.stocks.length)];
+      }, 100);
+
+      setTimeout(() => {
         clearInterval(interval);
-        this.selectedStock = this.displayedStocks[0];
-        await updateDoc(doc(db, 'games', this.gameId), {
-          selectedStock: this.selectedStock
-        });
-        this.$emit('stock-selected', this.selectedStock);
-      }, 3000); // Spin for 3 seconds
+        this.displayedStock = finalStock;
+        this.spinning = false;
+        this.$emit('stock-selected', finalStock);
+      }, 3000);
     }
   }
-}
+};
 </script>
 
 <style scoped>

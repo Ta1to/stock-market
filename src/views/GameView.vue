@@ -18,6 +18,7 @@
         <button @click="predict('boom')" class="w-full p-2 bg-green-500 rounded shadow-lg hover:bg-green-700 mb-2">Boom</button>
         <button @click="predict('constant')" class="w-full p-2 bg-yellow-500 rounded shadow-lg hover:bg-yellow-700">Constant</button>
       </div>
+      <LeaveGameButton />
     </div>
   </div>
 </template>
@@ -28,6 +29,7 @@ import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, CategoryScale, L
 import { getStockData, getStockPrice } from '../api/stock';
 import StockSelector from '../components/StockSelector.vue';
 import StockChart from '../components/StockChart.vue';
+import LeaveGameButton from '../components/LeaveGameButton.vue';
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement);
 
@@ -35,12 +37,13 @@ export default {
   name: 'GameView',
   components: {
     StockSelector,
-    StockChart
+    StockChart,
+    LeaveGameButton
   },
   data() {
     return {
       round: 1,
-      selectedStock: 'AAPL', // Default to Apple stock
+      selectedStock: 'AAPL',
       stockPrice: null,
       gameId: this.$route.params.id,
       chartData: {
@@ -78,7 +81,7 @@ export default {
     },
     predict(prediction) {
       console.log(`Prediction: ${prediction}`);
-      // Handle prediction logic here
+      // Prediction logic here
     },
     handleStockSelected(stock) {
       this.selectedStock = stock;

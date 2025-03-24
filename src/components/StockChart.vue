@@ -136,16 +136,8 @@ export default {
   methods: {
     async fetchStockData() {
       try {
-        const { dates, prices } = await getStockData(this.stockSymbol, 52)
-        // Format dates to show only month and year
-        const formattedDates = dates.map(date => {
-          const d = new Date(date)
-          return new Intl.DateTimeFormat('en-US', { 
-            month: 'short',
-            year: '2-digit'
-          }).format(d)
-        })
-        this.chartData.labels = formattedDates
+        const { dates, prices } = await getStockData(this.stockSymbol)
+        this.chartData.labels = dates
         this.chartData.datasets[0].data = prices
         this.updateDisplayedChartData()
       } catch (error) {
@@ -153,13 +145,32 @@ export default {
       }
     },
     updateDisplayedChartData() {
-      const last6Months = 26 // 6 months = 26 weeks
+      const last6Months = 6 // Show only the last 6 months initially
       this.displayedChartData.labels = this.chartData.labels.slice(-last6Months)
       this.displayedChartData.datasets[0].data = this.chartData.datasets[0].data.slice(-last6Months)
     },
     revealChart() {
       this.showFullChart = true
-      this.displayedChartData = { ...this.chartData } // Ensure reactivity
+      const totalMonths = this.chartData.labels.length
+      const revealStep = 1 // Number of months to reveal at each step
+      let currentIndex = this.displayedChartData.labels.length
+
+      const reveal = () => {
+        if (currentIndex < totalMonths) {
+          const newLabels = [...this.displayedChartData.labels, this.chartData.labels[currentIndex]]
+          const newData = [...this.displayedChartData.datasets[0].data, this.chartData.datasets[0].data[currentIndex]]
+          this.displayedChartData = {
+            labels: newLabels,
+            datasets: [{
+              ...this.displayedChartData.datasets[0],
+              data: newData
+            }]
+          }
+          currentIndex += revealStep
+          requestAnimationFrame(reveal)
+        }
+      }
+      requestAnimationFrame(reveal)
     }
   }
 }
@@ -167,12 +178,12 @@ export default {
 
 <style scoped>
 .chart-container {
-  width: 100%;
-  height: 400px;
+  width: 600px; /* Adjust the width to make the chart smaller */
+  height: 300px; /* Adjust the height to make the chart smaller */
   background: rgba(17, 24, 39, 0.6);
   border-radius: 16px;
   padding: 24px;
-  margin: 20px 0;
+  margin: 20px auto; /* Center the chart */
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }

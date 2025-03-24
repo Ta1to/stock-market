@@ -36,15 +36,14 @@
 <script>
 import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, collection, addDoc, doc, getDoc, updateDoc, arrayUnion, getDocs, query, where } from "firebase/firestore";
-import { getStockPrice } from '../api/stock'; // Updated import path to stock.js
-
+import { getStockPrice } from '../api/stock';
 export default {
   name: 'HomeView',
   data() {
     return {
       showJoinGameModal: false,
       joinCode: '',
-      stockPrice: null, // Ensure stockPrice is defined
+      stockPrice: null,
     };
   },
   methods: {
