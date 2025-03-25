@@ -145,7 +145,7 @@ export default {
       }
     },
     updateDisplayedChartData() {
-      const last6Months = 6 // Show only the last 6 months initially
+      const last6Months = 26 // Show only the last 6 months initially
       this.displayedChartData.labels = this.chartData.labels.slice(-last6Months)
       this.displayedChartData.datasets[0].data = this.chartData.datasets[0].data.slice(-last6Months)
     },
@@ -178,12 +178,12 @@ export default {
 
 <style scoped>
 .chart-container {
-  width: 600px; /* Adjust the width to make the chart smaller */
-  height: 300px; /* Adjust the height to make the chart smaller */
+  width: 600px;
+  height: 300px;
   background: rgba(17, 24, 39, 0.6);
   border-radius: 16px;
   padding: 24px;
-  margin: 20px auto; /* Center the chart */
+  margin: 20px auto;
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }

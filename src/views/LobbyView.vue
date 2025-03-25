@@ -22,6 +22,7 @@
 <script>
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, deleteDoc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
+import { getRandomStock, getStockData } from '../api/stock';
 
 export default {
   name: 'LobbyView',
@@ -49,10 +50,27 @@ export default {
     async startGame() {
       const db = getFirestore();
       const gameId = this.$route.params.id;
+
       try {
+        const stocks = await getRandomStock(5);
+        const stockDetails = await Promise.all(
+          stocks.map(async (stock) => {
+            const { dates, prices } = await getStockData(stock.symbol);
+            return {
+              name: stock.name,
+              symbol: stock.symbol,
+              history: dates.map((date, index) => ({
+                date,
+                price: prices[index]
+              }))
+            };
+          })
+        );
+
         await updateDoc(doc(db, "games", gameId), {
           state: 'started',
-          round: 1
+          round: 1,
+          stocks: stockDetails
         });
         this.$router.push(`/game/${gameId}`);
       } catch (e) {

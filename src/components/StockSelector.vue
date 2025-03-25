@@ -18,7 +18,7 @@ export default {
   name: 'StockSelector',
   props: {
     gameId: String,
-    isCreator: Boolean // Nur Creator führt Spin aus
+    isCreator: Boolean
   },
   data() {
     return {
