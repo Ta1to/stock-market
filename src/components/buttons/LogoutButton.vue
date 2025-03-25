@@ -1,5 +1,5 @@
 <template>
-  <button @click="logout" class="leave-button">Leave Game</button>
+  <button @click="logout" class="leave-button">Leave Game Test</button>
 </template>
   
 <script>
