@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import { getFirestore, doc, updateDoc, deleteDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { getDatabase, ref, get, update, remove, query, orderByChild, equalTo } from "firebase/database";
 import { getAuth } from "firebase/auth";
 import { useRouter } from 'vue-router';
 
@@ -17,42 +17,53 @@ export default {
     async leaveGame() {
       const auth = getAuth();
       const user = auth.currentUser;
-      const db = getFirestore();
-      const userDocRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userDocRef);
+      const db = getDatabase();
 
-      if (userDoc.exists()) {
-        const gameId = userDoc.data().gameId;
-        const gameDocRef = doc(db, "games", gameId);
-        const gameDoc = await getDoc(gameDocRef);
+      if(!user) {
+        console.log("No user logged in.");
+        return;
+      }
 
-        if (gameDoc.exists()) {
-          const gameData = gameDoc.data();
+      const userRef = ref(db, `users/${user.uid}`);
+      const userSnapshot = await get(userRef);
+
+      if (userSnapshot.exists()) {
+        const gameId = userSnapshot.val().gameId;
+        const gameRef = ref(db, `games/${gameId}`);
+        const gameSnapshot = await get(gameRef);
+
+        if (gameSnapshot.exists()) {
+          const gameData = gameSnapshot.val();
+
           if (gameData.creatorId === user.uid) {
             // Reassign creator role
-            const playersQuery = query(collection(db, "users"), where("gameId", "==", gameId));
-            const playersSnapshot = await getDocs(playersQuery);
+            const playersQuery = query(ref(db, 'users'), orderByChild('gameId'), equalTo(gameId));
+            const playersSnapshot = await get(playersQuery);
+
             let newCreatorId = null;
 
-            playersSnapshot.forEach((playerDoc) => {
-              if (playerDoc.id !== user.uid && !newCreatorId) {
-                newCreatorId = playerDoc.id;
+            playersSnapshot.forEach((playerSnapshot) => {
+              if (playerSnapshot.key !== user.uid && !newCreatorId) {
+                newCreatorId = playerSnapshot.key;
               }
             });
 
             if (newCreatorId) {
-              await updateDoc(gameDocRef, { creatorId: newCreatorId });
+              await update(gameRef, { creatorId: newCreatorId });
             } else {
               // No players left, delete the game
-              await deleteDoc(gameDocRef);
+              await remove(gameRef);
               this.$router.push('/');
+              return;
             }
           }
 
-          // Delete user from Firestore
-          await deleteDoc(userDocRef);
+          // Remove the user from the game
+          await remove(userRef);
           this.$router.push('/');
         }
+      } else {
+        console.error("User document does not exist.");
       }
     }
   }

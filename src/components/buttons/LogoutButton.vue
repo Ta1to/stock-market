@@ -1,5 +1,5 @@
 <template>
-  <button @click="logout" class="leave-button">Leave Game</button>
+  <button @click="logout" class="logout-button">Logout</button>
 </template>
   
 <script>
@@ -26,7 +26,7 @@ export default {
 </script>
   
 <style scoped>
-.leave-button {
+.logout-button {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -39,7 +39,7 @@ export default {
   font-weight: bold;
 }
   
-.leave-button:hover {
+.logout-button:hover {
   background-color: #d32f2f;
 }
 </style>

@@ -5,7 +5,7 @@
       <p class="text-lg mb-6">Join Code: {{ joinCode }}</p>
       <ul class="mb-6">
         <li v-for="user in users" :key="user.uid" class="flex items-center justify-between p-2 bg-gray-700 rounded mb-2">
-          <span>{{ user.username }}</span>
+          <span>{{ user.name }}</span>
           <i v-if="user.uid === creator" class="fas fa-crown text-yellow-500"></i>
         </li>
       </ul>
@@ -22,7 +22,7 @@
 <script>
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { readData, updateData, deleteData } from "@/services/database";
-//import { getRandomStock, getStockData } from '../api/stock';
+import {  getRandomStock, getStockData } from '../api/stock';
 
 export default {
   name: 'LobbyView',
@@ -50,7 +50,7 @@ export default {
       const gameId = this.$route.params.id;
 
       try {
-        /*const stocks = await getRandomStock(5);
+        const stocks = await getRandomStock(2);
         const stockDetails = await Promise.all(
           stocks.map(async (stock) => {
             const { dates, prices } = await getStockData(stock.symbol);
@@ -63,13 +63,15 @@ export default {
               }))
             };
           })
-        );*/
+        );
 
         await updateData(`games/${gameId}`, {
           state: 'started',
           round: 1,
-          //stocks: stockDetails
+          stocks: stockDetails
         });
+
+        // Redirect to the game view
         this.$router.push(`/game/${gameId}`);
       } catch (e) {
         console.error("Error starting game: ", e);

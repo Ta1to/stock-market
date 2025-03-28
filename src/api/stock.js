@@ -8,10 +8,9 @@ const BASE_URL = 'https://api.twelvedata.com';
 export const getRandomStock = async (amount) => {
     const randomStock = [];
     for (let index = 0; index < amount; index++) {
-        randomStock.push(stockList[Math.floor(Math.random() * stockList.length)].symbol);
+        const stock = stockList[Math.floor(Math.random() * stockList.length)];
+        randomStock.push({ name: stock.name, symbol: stock.symbol });
     }
-
-    console.log('Random stock:', randomStock);
 
     return randomStock;
 };
