@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { stockList } from '../utils/stock-list'; // Corrected import path
+import { stockList } from '../utils/stock-list';
 
 const API_KEY = "0bcd08147d344c59af873d72bd752c38";
 const BASE_URL = 'https://api.twelvedata.com';
