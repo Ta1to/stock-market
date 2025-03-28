@@ -21,8 +21,8 @@
 
 <script>
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, doc, deleteDoc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
-import { getRandomStock, getStockData } from '../api/stock';
+import { readData, updateData, deleteData } from "@/services/database";
+//import { getRandomStock, getStockData } from '../api/stock';
 
 export default {
   name: 'LobbyView',
@@ -37,10 +37,9 @@ export default {
   },
   methods: {
     async deleteGame() {
-      const db = getFirestore();
       const gameId = this.$route.params.id;
       try {
-        await deleteDoc(doc(db, "games", gameId));
+        await deleteData(`games/${gameId}`);
         console.log("Game deleted with ID: ", gameId);
         this.$router.push('/');
       } catch (e) {
@@ -48,11 +47,10 @@ export default {
       }
     },
     async startGame() {
-      const db = getFirestore();
       const gameId = this.$route.params.id;
 
       try {
-        const stocks = await getRandomStock(5);
+        /*const stocks = await getRandomStock(5);
         const stockDetails = await Promise.all(
           stocks.map(async (stock) => {
             const { dates, prices } = await getStockData(stock.symbol);
@@ -65,12 +63,12 @@ export default {
               }))
             };
           })
-        );
+        );*/
 
-        await updateDoc(doc(db, "games", gameId), {
+        await updateData(`games/${gameId}`, {
           state: 'started',
           round: 1,
-          stocks: stockDetails
+          //stocks: stockDetails
         });
         this.$router.push(`/game/${gameId}`);
       } catch (e) {
@@ -78,26 +76,31 @@ export default {
       }
     },
     async fetchUsers() {
-      const db = getFirestore();
       const gameId = this.$route.params.id;
-      const gameDoc = await getDoc(doc(db, "games", gameId));
-      if (gameDoc.exists()) {
-        const gameData = gameDoc.data();
-        this.creator = gameData.creator;
-        this.joinCode = gameData.code;
-        this.users = gameData.players;
-        this.checkIfCreator();
+      try {
+        const gameData = await readData(`games/${gameId}`);
+        if (gameData) {
+          this.creator = gameData.creator;
+          this.joinCode = gameData.code;
+          this.users = gameData.players || [];
+          this.checkIfCreator();
+        }
+      } catch (e) {
+        console.error("Error fetching users: ", e);
       }
     },
     async fetchGameDetails() {
-      const db = getFirestore();
       const gameId = this.$route.params.id;
-      const gameDoc = await getDoc(doc(db, "games", gameId));
-      if (gameDoc.exists()) {
-        this.creator = gameDoc.data().creator;
-        this.joinCode = gameDoc.data().code;
-        this.gameState = gameDoc.data().state;
-        this.checkIfCreator();
+      try {
+        const gameData = await readData(`games/${gameId}`);
+        if (gameData) {
+          this.creator = gameData.creator;
+          this.joinCode = gameData.code;
+          this.gameState = gameData.state;
+          this.checkIfCreator();
+        }
+      } catch (e) {
+        console.error("Error fetching game details: ", e);
       }
     },
     checkIfCreator() {
@@ -115,28 +118,30 @@ export default {
         this.$router.push('/login');
       }
     });
+
     await this.fetchGameDetails();
     await this.fetchUsers();
 
-    const db = getFirestore();
     const gameId = this.$route.params.id;
-    onSnapshot(doc(db, "games", gameId), (doc) => {
-      if (doc.exists()) {
-        const gameData = doc.data();
-        this.users = gameData.players;
+    try {
+      const gameRef = `games/${gameId}`;
+      const gameData = await readData(gameRef);
+
+      if (gameData) {
+        this.users = gameData.players || [];
         this.gameState = gameData.state;
+
         if (this.gameState === 'started') {
           this.$router.push(`/game/${gameId}`);
         }
-        console.log(`User joined the game: ${gameData.players[gameData.players.length - 1].username}`);
       } else {
-        console.log("Game document does not exist, redirecting to home.");
+        console.log("Game does not exist, redirecting to home.");
         this.$router.push('/');
       }
-    }, (error) => {
-      console.log("Error fetching game document:", error);
+    } catch (e) {
+      console.error("Error fetching game data:", e);
       this.$router.push('/');
-    });
+    }
   }
 }
 </script>

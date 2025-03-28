@@ -3,22 +3,27 @@
     <div class="bg-dark-light p-8 rounded-lg shadow-lg w-full max-w-4xl text-center">
       <h1 class="text-2xl mb-2">Game</h1>
       <p class="text-lg mb-6">Round: {{ round }}</p>
-      <div class="mt-4 mb-4">
-        <stock-chart 
-          v-if="selectedStock" 
-          :stock-symbol="selectedStock"
-          key="stockChart"
-        ></stock-chart>
+      
+      <div v-if="stocks.length > 0" class="stock-selector mb-4">
+        <label for="stock-select" class="block text-sm font-medium text-gray-300 mb-2">Select Stock:</label>
+        <select id="stock-select" v-model="selectedStock" @change="handleStockSelected(selectedStock)" class="bg-gray-700 text-white p-2 rounded">
+          <option v-for="stock in stocks" :key="stock.symbol" :value="stock">
+            {{ stock.name }} ({{ stock.symbol }})
+          </option>
+        </select>
       </div>
+
+      <stock-chart v-if="selectedStock" :stock-data="{ dates: selectedStock.history.map(h => h.date), prices: selectedStock.history.map(h => h.price) }" />
+
       <LeaveGameButton />
     </div>
   </div>
 </template>
 
 <script>
-import { getFirestore, doc, onSnapshot } from "firebase/firestore";
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement } from 'chart.js';
-import { getStockData } from '../api/stock';
+import { ref, onValue } from "firebase/database";
+import { readData } from "@/services/database";
 import StockChart from '../components/StockChart.vue';
 import LeaveGameButton from '../components/buttons/LeaveGameButton.vue';
 
@@ -33,58 +38,54 @@ export default {
   data() {
     return {
       round: 1,
-      selectedStock: 'AAPL',
-      stockPrice: null,
+      selectedStock: null,
+      stocks: [],
       gameId: this.$route.params.id,
-      chartData: {
-        labels: [],
-        datasets: [
-          {
-            label: 'Stock Price',
-            backgroundColor: '#f87979',
-            data: []
-          }
-        ]
-      },
-      chartOptions: {
-        responsive: true,
-        maintainAspectRatio: false
-      }
     };
   },
-  methods: {
-    async fetchStockData() {
+  methods: {    
+    async fetchGameData() {
+      const gameId = this.$route.params.id;
       try {
-        const { dates, prices } = await getStockData(this.selectedStock, 30);
-        this.chartData.labels = dates;
-        this.chartData.datasets[0].data = prices;
+        const gameData = await readData(`games/${gameId}`);
+        if (gameData) {
+          this.round = gameData.round;
+          // Load stocks form the game
+          this.stocks = gameData.stocks || [];
+          this.selectedStock = this.stocks.length > 0 ? this.stocks[0] : null;
+        } else {
+          console.log("Game does not exist, redirecting to home.");
+          this.$router.push('/');
+        }
       } catch (error) {
-        console.error("Error fetching stock data:", error);
-      }
-    },
-    predict(prediction) {
-      console.log(`Prediction: ${prediction}`);
-    },
-    handleStockSelected(stock) {
-      this.selectedStock = stock;
-      this.fetchStockPrice();
-    }
-  },
-  async created() {
-    const db = getFirestore();
-    const gameId = this.$route.params.id;
-    onSnapshot(doc(db, "games", gameId), (doc) => {
-      if (doc.exists()) {
-        const gameData = doc.data();
-        this.round = gameData.round;
-      } else {
-        console.log("Game document does not exist, redirecting to home.");
+        console.error("Error fetching game data:", error);
         this.$router.push('/');
       }
-    }, (error) => {
-      console.log("Error fetching game document:", error);
-      this.$router.push('/');
-    });
+    },
+    handleStockSelected(stock) {
+      this.selectedStock = stock; 
+    },
+    listenToGameUpdates() {
+      const gameId = this.$route.params.id;
+      const gameRef = ref(this.$firebase.db, `games/${gameId}`);
+      onValue(gameRef, (snapshot) => {
+        const gameData = snapshot.val();
+        if (gameData) {
+          this.round = gameData.round;
+        } else {
+          console.log("Game does not exist, redirecting to home.");
+          this.$router.push('/');
+        }
+      }, (error) => {
+        console.error("Error listening to game updates:", error);
+        this.$router.push('/');
+      });
+    }
+  },
+
+ async created() {
+    await this.fetchGameData();
+    this.listenToGameUpdates();
   }
 }
 </script>

@@ -78,6 +78,7 @@
 
 <script>
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { writeData } from "@/services/database";
 
 export default {
   name: 'RegisterView',
@@ -112,7 +113,18 @@ export default {
       const auth = getAuth();
       
       try {
+        // Register User with Firebase
         const userCredential = await createUserWithEmailAndPassword(auth, this.email, this.password);
+        const user = userCredential.user;
+
+        // Store user data in Database
+        await writeData(`users/${user.uid}`, {
+          name: this.name,
+          email: this.email,
+          createdAt: new Date().toISOString()
+        });
+
+
         console.log("User registered:", userCredential.user);
         this.$router.push('/');
       } catch (error) {

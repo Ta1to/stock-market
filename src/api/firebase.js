@@ -1,10 +1,11 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from 'firebase/firestore';
+import { getDatabase } from 'firebase/database';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAeZ55Z0xzUwDZZewJSK9OEvqQ_vsEPjb8",
   authDomain: "stock-market-2e8d5.firebaseapp.com",
+  databaseURL: "https://stock-market-2e8d5-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "stock-market-2e8d5",
   storageBucket: "stock-market-2e8d5.firebasestorage.app",
   messagingSenderId: "949922389072",
@@ -14,7 +15,7 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app); 
+const db = getDatabase(app);
 const auth = getAuth(app);
 
 export { db, auth, app };
