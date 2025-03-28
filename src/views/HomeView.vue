@@ -1,42 +1,68 @@
 <template>
-  <div class="min-h-screen flex flex-col items-center justify-center bg-dark text-white font-stock">
-    <div class="bg-dark-light p-8 rounded-lg shadow-lg w-full max-w-md text-center">
-      <h1 class="text-2xl mb-6">Stock Poker</h1>
-      <div class="flex space-x-4">
-        <button @click="showJoinGame" class="text-xl bg-blue-500 rounded shadow-lg hover:bg-blue-700 flex items-center justify-center w-48 h-48">
-          <i class="fas fa-sign-in-alt mr-2"></i> Join Game
-        </button>
-        <button @click="createGame" class="text-xl bg-green-500 rounded shadow-lg hover:bg-green-700 flex items-center justify-center w-48 h-48">
-          <i class="fas fa-plus mr-2"></i> Create Game
-        </button>
+  <div class="main-wrapper">
+  <div class="home-container">
+    <div class="background-overlay"></div>
+      <h1 class="title text-center">Stock Poker</h1>
+      <LogoutButton class="logout-button"/>
+      <!-- Game Options -->
+      <div class="game-options">
+        <button @click="createGame" class="btn primary">Create Game</button>
+        <button @click="showJoinGame" class="btn secondary">Join Game</button>
       </div>
-    </div>
-    <LogoutButton />
-    <OpenGames />
-    <button @click="isGamePublic = !isGamePublic" class="p-2 bg-gray-600 rounded shadow-lg">
-      {{ isGamePublic ? "Public Game" : "Private Game" }}
-    </button>
-    <div v-if="showJoinGameModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="bg-dark-light p-8 rounded-lg shadow-lg w-full max-w-md text-center">
-        <h2 class="text-xl mb-4">Join Game</h2>
-        <input v-model="joinCode" type="text" placeholder="Enter game code" class="w-full p-2 mb-4 bg-gray-700 rounded">
-        <button @click="joinGame" class="w-full p-2 bg-blue-500 rounded shadow-lg hover:bg-blue-700">Join</button>
-        <button @click="closeJoinGameModal" class="w-full p-2 mt-2 bg-red-500 rounded shadow-lg hover:bg-red-700">Cancel</button>
+
+      <!-- Public/Private Toggle -->
+      <div class="toggle-container">
+        <span :class="{'active': isGamePublic}" @click="isGamePublic = true">Public</span>
+        <div class="toggle-switch" @click="isGamePublic = !isGamePublic">
+          <div class="toggle-slider" :class="{'right': !isGamePublic}"></div>
+        </div>
+        <span :class="{'active': !isGamePublic}" @click="isGamePublic = false">Private</span>
+      </div>
+
+      <!-- Public Games Section -->
+      <div class="public-games-container">
+        <h2 class="text-2xl font-bold text-center text-white mb-4">🔹 Öffentliche Spiele 🔹</h2>
+
+        <div v-if="publicGames.length" class="game-grid">
+          <div v-for="game in publicGames" :key="game.id" class="game-card">
+            <div class="game-info">
+              <h3 class="text-lg font-semibold">{{ game.code }}</h3>
+              <p class="text-sm">{{ game.players.length }} Spieler</p>
+            </div>
+            <button 
+              @click="$router.push(`/lobby/${game.id}`)" 
+              class="join-button"
+            >
+              Beitreten
+            </button>
+          </div>
+        </div>
+        <p v-else class="text-center text-gray-400">Keine öffentlichen Spiele verfügbar.</p>
+      </div>
+          <!-- Join Game Modal -->
+    <div v-if="showJoinGameModal" class="modal-overlay">
+      <div class="modal">
+        <h2>Join Game</h2>
+        <input v-model="joinCode" type="text" placeholder="Enter game code" />
+        <div class="modal-buttons">
+          <button @click="joinGame" class="btn primary">Join</button>
+          <button @click="closeJoinGameModal" class="btn secondary">Cancel</button>
+        </div>
       </div>
     </div>
   </div>
+</div>
 </template>
+
 
 <script>
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { writeData, readData, updateData } from "@/services/database";
 import LogoutButton from '../components/buttons/LogoutButton.vue';
-import OpenGames from '../components/OpenGames.vue';
 export default {
   name: 'HomeView',
     components: {
-        LogoutButton, 
-        OpenGames
+        LogoutButton
     },
   data() {
     return {
@@ -44,6 +70,7 @@ export default {
       joinCode: '',
       stockPrice: null,
       isGamePublic: true,
+      publicGames: [],
     };
   },
   methods: {
@@ -52,6 +79,16 @@ export default {
     },
     closeJoinGameModal() {
       this.showJoinGameModal = false;
+    },
+    async fetchGames() {
+      try {
+        const games = await readData("games");
+        this.publicGames = Object.entries(games || {})
+          .filter(([/* id */, game]) => game.isPublic === true)
+          .map(([id, game]) => ({ id, ...game }));
+      } catch (error) {
+        console.error("Error while loading games: ", error);
+      }
     },
     async joinGame() {
       const auth = getAuth();
@@ -119,6 +156,7 @@ export default {
     },
   },
   created() {
+    this.fetchGames();
     const auth = getAuth();
     onAuthStateChanged(auth, (user) => {
       if (!user) {
@@ -130,5 +168,6 @@ export default {
 </script>
 
 <style>
+@import '../assets/styles/homeview.css';
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
 </style>

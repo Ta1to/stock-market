@@ -1,10 +1,20 @@
 <template>
-  <v-container class="fill-height d-flex align-center justify-center auth-container">
-    <v-card elevation="8" width="600" class="pa-12 rounded-lg">
-      <div class="text-center mb-6">
-        <v-icon size="48" color="primary" class="mb-4">mdi-chart-line</v-icon>
-        <v-card-title class="text-h4 justify-center">Create Account</v-card-title>
-        <v-card-subtitle>Join the trading community</v-card-subtitle>
+  <v-container class="fill-height d-flex align-center justify-center auth-wrapper" fluid>
+    <v-card elevation="0" width="600" class="register-card rounded-xl pa-12 position-relative">
+      <div class="register-card-overlay"></div>
+
+      <div class="text-center mb-8">
+        <div class="d-flex justify-center align-center mb-4">
+          <v-icon size="48" color="accent" class="mr-2">mdi-chart-line</v-icon>
+          <span class="register-logo text-h3 font-weight-black">Stock Poker</span>
+        </div>
+
+        <v-card-title class="text-h4 justify-center mb-2 text-accent">
+          Create Account
+        </v-card-title>
+        <v-card-subtitle class="text-center text-medium-emphasis">
+          Join the trading community
+        </v-card-subtitle>
       </div>
 
       <v-card-text>
@@ -53,7 +63,7 @@
           
           <v-btn
             type="submit"
-            color="primary"
+            color="accent"
             block
             height="44"
             :loading="loading"
@@ -150,32 +160,62 @@ export default {
 </script>
 
 <style scoped>
-.v-application {
-  background-color: #121212 !important;
+:root {
+  --bg-dark-primary: #0f0f1a;
+  --bg-dark-secondary: #1c1c2e;
+  --accent-gold: #ffd700;
+  --accent-gold-transparent: rgba(255, 215, 0, 0.7);
 }
 
-.auth-container {
-  max-width: 100% !important;
+.auth-wrapper {
+  background: linear-gradient(135deg, var(--bg-dark-primary), var(--bg-dark-secondary));
+  min-height: 100vh;
+}
+
+.register-card {
+  background: linear-gradient(145deg, rgba(26, 26, 46, 0.9), rgba(22, 33, 62, 0.9));
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.5),
+    0 0 0 1px var(--accent-gold-transparent);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.register-logo {
+  color: var(--accent-gold);
+  text-shadow: 
+    0 4px 15px var(--accent-gold-transparent),
+    2px 2px 0 rgba(0,0,0,0.2);
+  letter-spacing: 2px;
+}
+
+.v-field {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid var(--accent-gold-transparent);
+}
+
+.v-field:focus-within {
+  border-color: var(--accent-gold) !important;
+  box-shadow: 0 0 15px var(--accent-gold-transparent);
+}
+
+.v-btn {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.4s ease;
+}
+
+.v-btn:hover {
+  transform: translateY(-3px);
 }
 
 .custom-link {
   color: inherit;
-  transition: all 0.3s ease;
+  transition: opacity 0.3s ease;
 }
 
 .custom-link:hover {
   opacity: 0.8;
-}
-
-.custom-link:active {
-  opacity: 0.6;
-}
-
-.link-text {
-  color: #1976d2 !important;
-}
-
-.link-text:hover {
-  color: #2196f3 !important;
 }
 </style>
