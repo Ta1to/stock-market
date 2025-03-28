@@ -4,6 +4,7 @@ import LoginView from '../views/auth/LoginView.vue';
 import RegisterView from '../views/auth/RegisterView.vue';
 import LobbyView from '../views/LobbyView.vue';
 import GameView from '../views/GameView.vue';
+import app from "../firebase"; // Import the initialized Firebase app
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 const routes = [
@@ -45,7 +46,7 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const auth = getAuth();
+  const auth = getAuth(app); // Ensure Firebase is initialized before using getAuth
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   onAuthStateChanged(auth, (user) => {
     if (requiresAuth && !user) {
