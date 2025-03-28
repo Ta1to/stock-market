@@ -12,6 +12,10 @@
       </div>
     </div>
     <LogoutButton />
+    <OpenGames />
+    <button @click="isGamePublic = !isGamePublic" class="p-2 bg-gray-600 rounded shadow-lg">
+      {{ isGamePublic ? "Public Game" : "Private Game" }}
+    </button>
     <div v-if="showJoinGameModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div class="bg-dark-light p-8 rounded-lg shadow-lg w-full max-w-md text-center">
         <h2 class="text-xl mb-4">Join Game</h2>
@@ -27,16 +31,19 @@
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { writeData, readData, updateData } from "@/services/database";
 import LogoutButton from '../components/buttons/LogoutButton.vue';
+import OpenGames from '../components/OpenGames.vue';
 export default {
   name: 'HomeView',
     components: {
-        LogoutButton
+        LogoutButton, 
+        OpenGames
     },
   data() {
     return {
       showJoinGameModal: false,
       joinCode: '',
       stockPrice: null,
+      isGamePublic: true,
     };
   },
   methods: {
@@ -57,7 +64,7 @@ export default {
             // Find the game by code
             const games = await readData("games");
             const gameId = Object.keys(games || {}).find(
-              key => games[key].code === this.joinCode
+              key => games[key].code === this.joinCode && !games[key].isPublic
             );
 
             if (gameId) {
@@ -95,6 +102,7 @@ export default {
               creator: user.uid,
               createdAt: new Date().toISOString(),
               code: gameId,
+              isPublic: this.isGamePublic,
               players: [{ uid: user.uid, name: userData.name }]
             };
 
