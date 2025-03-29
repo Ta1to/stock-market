@@ -84,7 +84,7 @@ export default {
       try {
         const games = await readData("games");
         this.publicGames = Object.entries(games || {})
-          .filter(([/* id */, game]) => game.isPublic === true)
+          .filter(([/* id */, game]) => game.isPublic === true && (!game.state || game.state !== 'started'))
           .map(([id, game]) => ({ id, ...game }));
       } catch (error) {
         console.error("Error while loading games: ", error);

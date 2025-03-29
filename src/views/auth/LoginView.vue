@@ -5,7 +5,8 @@
   >
     <v-card 
       elevation="0" 
-      width="600" 
+      :width="$vuetify.display.smAndDown ? '95%' : '100%'"
+      :max-width="$vuetify.display.smAndDown ? 'none' : '600'"
       class="login-card rounded-xl pa-12 position-relative"
     >
       <div class="login-card-overlay"></div>
@@ -41,6 +42,8 @@
             outlined
             prepend-inner-icon="mdi-email"
             class="mb-4"
+            density="comfortable"
+            style="max-width: 90%; margin: auto;"
           ></v-text-field>
           
           <v-text-field
@@ -54,6 +57,8 @@
             :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
             @click:append-inner="showPassword = !showPassword"
             class="mb-6"
+            density="comfortable"
+            style="max-width: 90%; margin: auto;"
           ></v-text-field>
 
           <v-alert
@@ -144,95 +149,5 @@ export default {
 </script>
 
 <style scoped>
-:root {
-  --bg-dark-primary: #0f0f1a;
-  --bg-dark-secondary: #1c1c2e;
-  --accent-gold: #ffd700;
-  --accent-gold-transparent: rgba(255, 215, 0, 0.7);
-}
-
-.auth-wrapper {
-  background: linear-gradient(135deg, var(--bg-dark-primary), var(--bg-dark-secondary));
-  min-height: 100vh;
-  perspective: 1000px;
-}
-
-.login-card {
-  background: linear-gradient(145deg, rgba(26, 26, 46, 0.9), rgba(22, 33, 62, 0.9));
-  box-shadow: 
-    0 25px 50px rgba(0, 0, 0, 0.5),
-    0 0 0 1px var(--accent-gold-transparent);
-  backdrop-filter: blur(10px);
-  position: relative;
-  overflow: hidden;
-  transform-style: preserve-3d;
-  transform: rotateX(10deg) rotateY(-10deg);
-  transition: all 0.5s ease;
-}
-
-.login-card:hover {
-  transform: rotateX(0) rotateY(0);
-}
-
-.login-logo {
-  color: var(--accent-gold);
-  text-shadow: 
-    0 4px 15px var(--accent-gold-transparent),
-    2px 2px 0 rgba(0,0,0,0.2);
-  letter-spacing: 2px;
-}
-
-.login-input .v-field {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid var(--accent-gold-transparent);
-}
-
-.login-input .v-field:focus-within {
-  border-color: var(--accent-gold) !important;
-  box-shadow: 0 0 15px var(--accent-gold-transparent);
-}
-
-.login-button {
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  transition: all 0.4s ease;
-}
-
-.login-button:hover {
-  transform: translateY(-5px);
-}
-
-.login-divider {
-  display: flex;
-  align-items: center;
-  text-align: center;
-  color: rgba(255,255,255,0.6);
-  margin: 1.5rem 0;
-}
-
-.login-divider span {
-  padding: 0 10px;
-  position: relative;
-}
-
-.login-divider::before,
-.login-divider::after {
-  content: '';
-  flex: 1;
-  border-bottom: 1px solid rgba(255,255,255,0.2);
-}
-
-.login-button-google {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: white !important;
-}
-
-.custom-link {
-  color: inherit;
-  transition: opacity 0.3s ease;
-}
-
-.custom-link:hover {
-  opacity: 0.8;
-}
+  @import '@/assets/styles/loginview.css';
 </style>

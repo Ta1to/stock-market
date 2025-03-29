@@ -27,6 +27,7 @@
             outlined
             prepend-inner-icon="mdi-account"
             class="mb-4"
+            style="max-width: 90%; margin: auto;"
           ></v-text-field>
 
           <v-text-field
@@ -38,6 +39,7 @@
             outlined
             prepend-inner-icon="mdi-email"
             class="mb-4"
+            style="max-width: 90%; margin: auto;"
           ></v-text-field>
           
           <v-text-field
@@ -51,6 +53,7 @@
             :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
             @click:append-inner="showPassword = !showPassword"
             class="mb-6"
+            style="max-width: 90%; margin: auto;"
           ></v-text-field>
 
           <v-alert
@@ -68,6 +71,7 @@
             height="44"
             :loading="loading"
             class="mb-4"
+            style="max-width: 90%; margin: auto;"
           >
             Create Account
           </v-btn>
@@ -160,62 +164,5 @@ export default {
 </script>
 
 <style scoped>
-:root {
-  --bg-dark-primary: #0f0f1a;
-  --bg-dark-secondary: #1c1c2e;
-  --accent-gold: #ffd700;
-  --accent-gold-transparent: rgba(255, 215, 0, 0.7);
-}
-
-.auth-wrapper {
-  background: linear-gradient(135deg, var(--bg-dark-primary), var(--bg-dark-secondary));
-  min-height: 100vh;
-}
-
-.register-card {
-  background: linear-gradient(145deg, rgba(26, 26, 46, 0.9), rgba(22, 33, 62, 0.9));
-  box-shadow: 
-    0 25px 50px rgba(0, 0, 0, 0.5),
-    0 0 0 1px var(--accent-gold-transparent);
-  backdrop-filter: blur(10px);
-  position: relative;
-  overflow: hidden;
-}
-
-.register-logo {
-  color: var(--accent-gold);
-  text-shadow: 
-    0 4px 15px var(--accent-gold-transparent),
-    2px 2px 0 rgba(0,0,0,0.2);
-  letter-spacing: 2px;
-}
-
-.v-field {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid var(--accent-gold-transparent);
-}
-
-.v-field:focus-within {
-  border-color: var(--accent-gold) !important;
-  box-shadow: 0 0 15px var(--accent-gold-transparent);
-}
-
-.v-btn {
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  transition: all 0.4s ease;
-}
-
-.v-btn:hover {
-  transform: translateY(-3px);
-}
-
-.custom-link {
-  color: inherit;
-  transition: opacity 0.3s ease;
-}
-
-.custom-link:hover {
-  opacity: 0.8;
-}
+@import '@/assets/styles/registerview.css';
 </style>
