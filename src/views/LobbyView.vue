@@ -2,56 +2,142 @@
   <div class="lobby-wrapper">
     <div class="lobby-container">
       <h1 class="lobby-title">Lobby</h1>
-      <div class="join-code">
-        Join Code: {{ joinCode }}
-      </div>
-      <div class="players-list">
-        <div v-for="user in users" :key="user.uid" class="player-card">
-          <span class="player-name">{{ user.name }}</span>
-          <i v-if="user.uid === creator" class="fas fa-crown crown-icon"></i>
+      <div class="lobby-header">
+        <div class="join-code">
+          Join Code: {{ joinCode }}
+        </div>
+        <div v-if="isCreator" class="visibility-toggle">
+          <span :class="{ 'active': !isPublic }">Privat</span>
+          <label class="switch">
+            <input 
+              type="checkbox" 
+              v-model="isPublic"
+              @change="updateGameVisibility"
+            >
+            <span class="slider"></span>
+          </label>
+          <span :class="{ 'active': isPublic }">Öffentlich</span>
         </div>
       </div>
-      <button v-if="isCreator" @click="deleteGame" class="action-button delete-button">
-        <i class="fas fa-trash-alt"></i> Delete Game
-      </button>
-      <button v-if="isCreator" @click="startGame" class="action-button start-button">
-        <i class="fas fa-play"></i> Start Game
-      </button>
+      
+      <PlayerList 
+        :players="users"
+        :creator="creator"
+        :isCreator="isCreator"
+        @remove-player="removePlayer"
+      />
+      
+      <div class="action-buttons">
+        <button v-if="isCreator" @click="deleteGame" class="action-button delete-button">
+          <i class="fas fa-trash-alt"></i> Spiel löschen
+        </button>
+        <button v-if="isCreator" @click="startGame" class="action-button start-button">
+          <i class="fas fa-play"></i> Spiel starten
+        </button>
+        <button 
+          v-if="!isCreator" 
+          @click="leaveGame" 
+          class="action-button leave-button">
+          <i class="fas fa-sign-out-alt"></i> Spiel verlassen
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { readData, updateData, deleteData } from "@/services/database";
-import {  getRandomStock, getStockData } from '../api/stock';
+import { updateData, deleteData } from "@/services/database";
+import { getRandomStock, getStockData } from '../api/stock';
+import PlayerList from '../components/PlayerList.vue';
+import { ref, onValue} from "firebase/database";
+import { db } from "../api/firebase";
 
 export default {
   name: 'LobbyView',
+  components: {
+    PlayerList
+  },
   data() {
     return {
       users: [],
       creator: '',
       joinCode: '',
       isCreator: false,
-      gameState: ''
+      gameState: '',
+      isPublic: false,
+      unsubscribe: null,
+      isLoading: false
     };
   },
   methods: {
-    async deleteGame() {
+    async updateGameVisibility() {
+      if (!this.isCreator) return;
+      
       const gameId = this.$route.params.id;
       try {
-        await deleteData(`games/${gameId}`);
-        console.log("Game deleted with ID: ", gameId);
-        this.$router.push('/');
+        this.isLoading = true;
+        await updateData(`games/${gameId}`, { 
+          isPublic: this.isPublic
+        });
       } catch (e) {
-        console.error("Error deleting document: ", e);
+        console.error("Error updating game visibility:", e);
+      } finally {
+        this.isLoading = false;
       }
     },
-    async startGame() {
+
+    async removePlayer(playerUid) {
+      if (!this.isCreator) return;
+      
       const gameId = this.$route.params.id;
+      try {
+        const updatedPlayers = this.users.filter(user => user.uid !== playerUid);
+        await updateData(`games/${gameId}`, { players: updatedPlayers });
+      } catch (e) {
+        console.error("Error removing player:", e);
+      }
+    },
+
+    async deleteGame() {
+      const gameId = this.$route.params.id;
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (!user || user.uid !== this.creator) {
+        console.error("Not authorized to delete this game");
+        return;
+      }
 
       try {
+        await deleteData(`games/${gameId}`);
+        this.$router.push('/');
+      } catch (e) {
+        console.error("Error deleting game:", e);
+      }
+    },
+    async leaveGame() {
+    const gameId = this.$route.params.id;
+    const auth = getAuth();
+    const user = auth.currentUser;
+    
+    if (!user) return;
+    
+    try {
+      const updatedPlayers = this.users.filter(player => player.uid !== user.uid);
+      await updateData(`games/${gameId}`, { players: updatedPlayers });
+      this.$router.push('/');
+    } catch (e) {
+      console.error("Error leaving game:", e);
+    }
+    },
+
+    async startGame() {
+      if (!this.isCreator) return;
+      
+      const gameId = this.$route.params.id;
+      try {
+        this.isLoading = true;
         const stocks = await getRandomStock(2);
         const stockDetails = await Promise.all(
           stocks.map(async (stock) => {
@@ -72,79 +158,72 @@ export default {
           round: 1,
           stocks: stockDetails
         });
+      } catch (e) {
+        console.error("Error starting game:", e);
+      } finally {
+        this.isLoading = false;
+      }
+    },
 
-        // Redirect to the game view
-        this.$router.push(`/game/${gameId}`);
-      } catch (e) {
-        console.error("Error starting game: ", e);
-      }
-    },
-    async fetchUsers() {
+    setupGameListener() {
       const gameId = this.$route.params.id;
-      try {
-        const gameData = await readData(`games/${gameId}`);
-        if (gameData) {
-          this.creator = gameData.creator;
-          this.joinCode = gameData.code;
-          this.users = gameData.players || [];
-          this.checkIfCreator();
-        }
-      } catch (e) {
-        console.error("Error fetching users: ", e);
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (!user) {
+        this.$router.push('/login');
+        return;
       }
-    },
-    async fetchGameDetails() {
-      const gameId = this.$route.params.id;
-      try {
-        const gameData = await readData(`games/${gameId}`);
-        if (gameData) {
-          this.creator = gameData.creator;
-          this.joinCode = gameData.code;
-          this.gameState = gameData.state;
-          this.checkIfCreator();
+
+      this.unsubscribe = onValue(ref(db, `games/${gameId}`), (snapshot) => {
+        const gameData = snapshot.val();
+        
+        if (!gameData) {
+          this.$router.push('/');
+          return;
         }
-      } catch (e) {
-        console.error("Error fetching game details: ", e);
-      }
+
+        // Check if user is a player in this game
+        const isPlayer = gameData.players?.some(player => player.uid === user.uid);
+        if (!isPlayer) {
+          this.$router.push('/');
+          return;
+        }
+
+        this.users = gameData.players || [];
+        this.creator = gameData.creator;
+        this.joinCode = gameData.code;
+        this.isPublic = gameData.isPublic;
+        this.gameState = gameData.state;
+        this.checkIfCreator();
+
+        if (gameData.state === 'started') {
+          this.$router.push(`/game/${gameId}`);
+        }
+      });
     },
+
     checkIfCreator() {
       const auth = getAuth();
       const user = auth.currentUser;
-      if (user && user.uid === this.creator) {
-        this.isCreator = true;
-      }
+      this.isCreator = user && user.uid === this.creator;
     }
   },
-  async created() {
+
+  created() {
     const auth = getAuth();
     onAuthStateChanged(auth, (user) => {
       if (!user) {
         this.$router.push('/login');
+      } else {
+        this.setupGameListener();
       }
     });
+  },
 
-    await this.fetchGameDetails();
-    await this.fetchUsers();
-
-    const gameId = this.$route.params.id;
-    try {
-      const gameRef = `games/${gameId}`;
-      const gameData = await readData(gameRef);
-
-      if (gameData) {
-        this.users = gameData.players || [];
-        this.gameState = gameData.state;
-
-        if (this.gameState === 'started') {
-          this.$router.push(`/game/${gameId}`);
-        }
-      } else {
-        console.log("Game does not exist, redirecting to home.");
-        this.$router.push('/');
-      }
-    } catch (e) {
-      console.error("Error fetching game data:", e);
-      this.$router.push('/');
+  beforeUnmount() {
+    if (this.unsubscribe) {
+      this.unsubscribe();
     }
   }
 }

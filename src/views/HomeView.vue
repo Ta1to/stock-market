@@ -1,9 +1,10 @@
 <template>
   <div class="main-wrapper">
-  <div class="home-container">
-    <div class="background-overlay"></div>
+    <div class="home-container">
+      <div class="background-overlay"></div>
       <h1 class="title text-center">Stock Poker</h1>
       <LogoutButton class="logout-button"/>
+      
       <!-- Game Options -->
       <div class="game-options">
         <button @click="createGame" class="btn primary">Create Game</button>
@@ -29,46 +30,43 @@
               <h3 class="text-lg font-semibold">{{ game.code }}</h3>
               <p class="text-sm">{{ game.players.length }} Spieler</p>
             </div>
-            <button 
-              @click="$router.push(`/lobby/${game.id}`)" 
-              class="join-button"
-            >
+            <button @click="joinGame(game)" class="join-button">
               Beitreten
             </button>
           </div>
         </div>
         <p v-else class="text-center text-gray-400">Keine öffentlichen Spiele verfügbar.</p>
       </div>
-          <!-- Join Game Modal -->
-    <div v-if="showJoinGameModal" class="modal-overlay">
-      <div class="modal">
-        <h2>Join Game</h2>
-        <input v-model="joinCode" type="text" placeholder="Enter game code" />
-        <div class="modal-buttons">
-          <button @click="joinGame" class="btn primary">Join</button>
-          <button @click="closeJoinGameModal" class="btn secondary">Cancel</button>
+
+      <!-- Join Game Modal -->
+      <div v-if="showJoinGameModal" class="modal-overlay">
+        <div class="modal">
+          <h2>Join Game</h2>
+          <input v-model="joinCode" type="text" placeholder="Enter game code" />
+          <div class="modal-buttons">
+            <button @click="joinGame()" class="btn primary">Join</button>
+            <button @click="closeJoinGameModal" class="btn secondary">Cancel</button>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 </template>
-
 
 <script>
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { writeData, readData, updateData } from "@/services/database";
 import LogoutButton from '../components/buttons/LogoutButton.vue';
+
 export default {
   name: 'HomeView',
-    components: {
-        LogoutButton
-    },
+  components: {
+    LogoutButton
+  },
   data() {
     return {
       showJoinGameModal: false,
       joinCode: '',
-      stockPrice: null,
       isGamePublic: true,
       publicGames: [],
     };
@@ -77,84 +75,104 @@ export default {
     showJoinGame() {
       this.showJoinGameModal = true;
     },
+    
     closeJoinGameModal() {
       this.showJoinGameModal = false;
+      this.joinCode = '';
     },
+    
     async fetchGames() {
       try {
         const games = await readData("games");
         this.publicGames = Object.entries(games || {})
-          .filter(([/* id */, game]) => game.isPublic === true && (!game.state || game.state !== 'started'))
+          .filter(([, game]) => game.isPublic === true && (!game.state || game.state !== 'started'))
           .map(([id, game]) => ({ id, ...game }));
       } catch (error) {
-        console.error("Error while loading games: ", error);
+        console.error("Error while loading games:", error);
       }
     },
-    async joinGame() {
+    
+    async joinGame(gameObject) {
       const auth = getAuth();
       const user = auth.currentUser;
-      if (user) {
-        try {
-          // Read user data from Realtime Database
-          const userData = await readData(`users/${user.uid}`);
-          if (userData) {
-            // Find the game by code
-            const games = await readData("games");
-            const gameId = Object.keys(games || {}).find(
-              key => games[key].code === this.joinCode && !games[key].isPublic
-            );
+      if (!user) return;
 
-            if (gameId) {
-              // Update the game with the new player
-              const game = games[gameId];
-              const updatedPlayers = game.players || [];
-              updatedPlayers.push({ uid: user.uid, username: userData.username });
-
-              await updateData(`games/${gameId}`, { players: updatedPlayers });
-              console.log(`User ${userData.username} joined the game with code: ${this.joinCode}`);
-              this.$router.push(`/lobby/${gameId}`);
-            } else {
-              console.error("No game found with the provided code!");
-            }
-          } else {
-            console.error("No such user document!");
-          }
-        } catch (e) {
-          console.error("Error joining game: ", e);
+      try {
+        const userData = await readData(`users/${user.uid}`);
+        if (!userData) {
+          console.error("No such user document!");
+          return;
         }
+
+        let gameId, game;
+
+        // Handle both direct game objects and game codes
+        if (gameObject) {
+          // Called from public games list
+          gameId = gameObject.id;
+          game = gameObject;
+        } else {
+          // Called from join by code
+          const games = await readData("games");
+          gameId = Object.keys(games || {}).find(
+            key => games[key].code === this.joinCode
+          );
+          if (!gameId) {
+            console.error("No game found with the provided code!");
+            return;
+          }
+          game = games[gameId];
+        }
+
+        const updatedPlayers = game.players || [];
+        
+        if (updatedPlayers.some(player => player.uid === user.uid)) {
+          console.error("Player already in game!");
+          return;
+        }
+
+        updatedPlayers.push({ 
+          uid: user.uid, 
+          name: userData.name 
+        });
+
+        await updateData(`games/${gameId}`, { players: updatedPlayers });
+        this.$router.push(`/lobby/${gameId}`);
+        this.closeJoinGameModal();
+      } catch (e) {
+        console.error("Error joining game:", e);
       }
-      this.closeJoinGameModal();
     },
+    
     async createGame() {
       const auth = getAuth();
       const user = auth.currentUser;
-      if (user) {
-        try {
-          // Read user data from Realtime Database
-          const userData = await readData(`users/${user.uid}`);
-          if (userData && userData.name) {
-            // Create a new game in Realtime Database
-            const gameId = Math.random().toString(36).substr(2, 5); // Generate a unique game ID
-            const gameData = {
-              creator: user.uid,
-              createdAt: new Date().toISOString(),
-              code: gameId,
-              isPublic: this.isGamePublic,
-              players: [{ uid: user.uid, name: userData.name }]
-            };
+      if (!user) return;
 
-            await writeData(`games/${gameId}`, gameData);
-            console.log("Game created with ID: ", gameId);
-            this.$router.push(`/lobby/${gameId}`);
-          } else {
-            console.error("User document does not have a username field!");
-          }
-        } catch (e) {
-          console.error("Error creating game: ", e);
+      try {
+        const userData = await readData(`users/${user.uid}`);
+        if (!userData?.name) {
+          console.error("User document does not have a name field!");
+          return;
         }
+
+        const gameId = Math.random().toString(36).substr(2, 5);
+        const gameData = {
+          creator: user.uid,
+          createdAt: new Date().toISOString(),
+          code: gameId,
+          isPublic: this.isGamePublic,
+          players: [{ uid: user.uid, name: userData.name }]
+        };
+
+        await writeData(`games/${gameId}`, gameData);
+        this.$router.push(`/lobby/${gameId}`);
+      } catch (e) {
+        console.error("Error creating game:", e);
       }
-    },
+    }
   },
+  
   created() {
     this.fetchGames();
     const auth = getAuth();
