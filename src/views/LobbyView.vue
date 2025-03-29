@@ -1,19 +1,21 @@
 <template>
-  <div class="min-h-screen flex flex-col items-center justify-center bg-dark text-white font-stock">
-    <div class="bg-dark-light p-8 rounded-lg shadow-lg w-full max-w-md text-center">
-      <h1 class="text-2xl mb-2">Lobby</h1>
-      <p class="text-lg mb-6">Join Code: {{ joinCode }}</p>
-      <ul class="mb-6">
-        <li v-for="user in users" :key="user.uid" class="flex items-center justify-between p-2 bg-gray-700 rounded mb-2">
-          <span>{{ user.name }}</span>
-          <i v-if="user.uid === creator" class="fas fa-crown text-yellow-500"></i>
-        </li>
-      </ul>
-      <button v-if="isCreator" @click="deleteGame" class="w-full p-2 bg-red-500 rounded shadow-lg hover:bg-red-700 flex items-center justify-center">
-        <i class="fas fa-trash-alt mr-2"></i> Delete Game
+  <div class="lobby-wrapper">
+    <div class="lobby-container">
+      <h1 class="lobby-title">Lobby</h1>
+      <div class="join-code">
+        Join Code: {{ joinCode }}
+      </div>
+      <div class="players-list">
+        <div v-for="user in users" :key="user.uid" class="player-card">
+          <span class="player-name">{{ user.name }}</span>
+          <i v-if="user.uid === creator" class="fas fa-crown crown-icon"></i>
+        </div>
+      </div>
+      <button v-if="isCreator" @click="deleteGame" class="action-button delete-button">
+        <i class="fas fa-trash-alt"></i> Delete Game
       </button>
-      <button v-if="isCreator" @click="startGame" class="w-full p-2 bg-green-500 rounded shadow-lg hover:bg-green-700 flex items-center justify-center mt-4">
-        <i class="fas fa-play mr-2"></i> Start Game
+      <button v-if="isCreator" @click="startGame" class="action-button start-button">
+        <i class="fas fa-play"></i> Start Game
       </button>
     </div>
   </div>
@@ -150,4 +152,5 @@ export default {
 
 <style>
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+@import '@/assets/styles/lobbyview.css';
 </style>
