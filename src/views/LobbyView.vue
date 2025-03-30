@@ -138,26 +138,34 @@ export default {
       const gameId = this.$route.params.id;
       try {
         this.isLoading = true;
-        const stocks = await getRandomStock(2);
-        const stockDetails = await Promise.all(
-          stocks.map(async (stock) => {
-            const { dates, prices } = await getStockData(stock.symbol);
-            return {
-              name: stock.name,
-              symbol: stock.symbol,
-              history: dates.map((date, index) => ({
-                date,
-                price: prices[index]
-              }))
-            };
-          })
-        );
 
-        await updateData(`games/${gameId}`, {
-          state: 'started',
-          round: 1,
-          stocks: stockDetails
-        });
+        // Amount of rounds
+        const numberOfRounds = 3;
+
+        // Update game state
+        await updateData(`games/${gameId}`, { state: 'started' });
+
+        // Fetch for each round a random stock
+        for (let round = 1; round <= numberOfRounds; round++) {
+          const stocks = await getRandomStock(1);
+          const stockDetails = await Promise.all(
+            stocks.map(async (stock) => {
+              const { dates, prices } = await getStockData(stock.symbol);
+              return {
+                name: stock.name,
+                symbol: stock.symbol,
+                history: dates.map((date, index) => ({
+                  date,
+                  price: prices[index]
+                }))
+              };
+            })
+          );
+
+          // Save a stock for each round in each round
+          await updateData(`games/${gameId}/rounds/${round}`, { stocks: stockDetails });
+        }
+
       } catch (e) {
         console.error("Error starting game:", e);
       } finally {

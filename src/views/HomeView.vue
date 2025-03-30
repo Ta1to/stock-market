@@ -133,7 +133,8 @@ export default {
 
         updatedPlayers.push({ 
           uid: user.uid, 
-          name: userData.name 
+          name: userData.name,
+          chips: 1000
         });
 
         await updateData(`games/${gameId}`, { players: updatedPlayers });
@@ -156,13 +157,32 @@ export default {
           return;
         }
 
+        // Generate a short code for the game
         const gameId = Math.random().toString(36).substr(2, 5);
+
         const gameData = {
           creator: user.uid,
           createdAt: new Date().toISOString(),
           code: gameId,
           isPublic: this.isGamePublic,
-          players: [{ uid: user.uid, name: userData.name }]
+          state: 'waiting', // or "not-started"
+          currentRound: 1,
+          totalRounds: 3,
+
+          players: [
+            {
+              uid: user.uid,
+              name: userData.name,
+              chips: 1000
+            }
+          ],
+
+          // Rounds object
+          rounds: {
+            1: { phase: 1, predictions: {}, bets: {}, pot: 0 },
+            2: { phase: 1, predictions: {}, bets: {}, pot: 0 },
+            3: { phase: 1, predictions: {}, bets: {}, pot: 0 },
+          }
         };
 
         await writeData(`games/${gameId}`, gameData);
