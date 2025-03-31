@@ -11,7 +11,7 @@
         :roundNumber="gameStore.currentRound"
         :isCreator="isCreator"
         @stock-selected="handleStockSelection"
-        @phase-complete="handlePhaseComplete"
+        @phase-complete="handleStockPhaseComplete"
       />
 
       <!-- Stock Prediction Popup -->
@@ -147,7 +147,7 @@ export default {
       }
     }
 
-    async function handlePhaseComplete() {
+    async function handleStockPhaseComplete() {
       console.log('Phase complete, moving to next phase');
       gameStore.nextPhase();
     }
@@ -167,7 +167,7 @@ export default {
       isCreator,
       handleStockSelection,
       route, 
-      handlePhaseComplete
+      handleStockPhaseComplete
     };
   },
 };
