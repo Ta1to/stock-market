@@ -4,9 +4,19 @@
       <h1 class="text-2xl mb-2">Stock Poker</h1>
       <h1>Round: {{ gameStore.currentRound }} / Phase: {{ gameStore.currentPhase }}</h1>
 
+       <!-- StockSelector as Modal -->
+       <StockSelector
+        :visible="gameStore.currentPhase === 1"
+        :gameId="route.params.id"
+        :roundNumber="gameStore.currentRound"
+        :isCreator="isCreator"
+        @stock-selected="handleStockSelection"
+        @phase-complete="handlePhaseComplete"
+      />
+
       <!-- Stock Prediction Popup -->
       <StockPrediction
-        :visible="gameStore.currentPhase === 1"
+        :visible="gameStore.currentPhase === 2"
         @submit="handlePrediction"
         @close="closePopup"
       />
@@ -33,7 +43,7 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed} from 'vue';
 import { useRoute } from 'vue-router';
 
 import { auth } from '@/api/firebase';
@@ -45,6 +55,7 @@ import LeaveGameButton from '@/components/buttons/LeaveGameButton.vue';
 import PokerTable from '@/components/game/PokerTable.vue';
 import PokerHUD from '@/components/game/PokerHUD.vue';
 import StockPrediction from '@/components/game/StockPrediction.vue';
+import StockSelector from '@/components/StockSelector.vue';  
 
 export default {
   name: 'GameView',
@@ -53,7 +64,8 @@ export default {
     LeaveGameButton,
     PokerTable,
     PokerHUD,
-    StockPrediction
+    StockPrediction, 
+    StockSelector
   },
 
   setup() {
@@ -66,6 +78,10 @@ export default {
     // Local states for popup
     const showPopup = ref(false);
     const prediction = ref(null);
+    
+    const isCreator = computed(() => {
+      return currentUser.value?.uid === gameStore.creator;
+    });
 
     onMounted(() => {
       // Listen for Firebase Auth changes
@@ -121,6 +137,21 @@ export default {
       gameStore.fold(playerId);
     }
 
+  
+    async function handleStockSelection(){
+      try {
+        if (!isCreator.value) return;
+        await gameStore.startStockSelection(route.params.id);
+      } catch (error) {
+        console.error('Error in handleStockSelection:', error);
+      }
+    }
+
+    async function handlePhaseComplete() {
+      console.log('Phase complete, moving to next phase');
+      gameStore.nextPhase();
+    }
+
     // Return everything you need in the template
     return {
       currentUser,
@@ -133,6 +164,10 @@ export default {
       handleBet,
       handleCheck,
       handleFold,
+      isCreator,
+      handleStockSelection,
+      route, 
+      handlePhaseComplete
     };
   },
 };

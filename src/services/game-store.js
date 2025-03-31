@@ -22,6 +22,7 @@ export const useGameStore = defineStore('game', {
 
     // Store the ID of the current game
     gameId: null,
+    creator: null, 
 
     players: [],
     predictions: {},
@@ -51,6 +52,10 @@ export const useGameStore = defineStore('game', {
           console.warn('Game not found or no data at this path');
           return;
         }
+
+        console.log('Game data received:', data);
+        // Add creator to state
+        this.creator = data.creator; 
 
         // Update currentRound from DB
         this.currentRound = data.currentRound || data.round || 1;
@@ -114,7 +119,24 @@ export const useGameStore = defineStore('game', {
         await updateRoundPhase(this.gameId, newRound, newPhase);
         await updateCurrentRound(this.gameId, newRound);
     },
+
+    async startStockSelection(gameId) {
+      if (!this.gameId) return;
       
+      try {
+        // Set phase to 1 if not already
+        if (this.currentPhase !== 1) {
+          await updateRoundPhase(this.gameId, this.currentRound, 1);
+        }
+    
+        // Log for debugging
+        console.log('Stock selection started for game:', gameId);
+        
+      } catch (error) {
+        console.error('Error in startStockSelection:', error);
+        throw error;
+      }
+    },
 
     /**
      * Player sets a prediction
