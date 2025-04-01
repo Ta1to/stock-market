@@ -52,6 +52,7 @@ import { getRandomStock, getStockData } from '../api/stock';
 import PlayerList from '../components/PlayerList.vue';
 import { ref, onValue} from "firebase/database";
 import { db } from "../api/firebase";
+import Swal from 'sweetalert2';
 
 export default {
   name: 'LobbyView',
@@ -134,6 +135,23 @@ export default {
 
     async startGame() {
       if (!this.isCreator) return;
+
+      if(this.users.length < 2) {
+        Swal.fire({ 
+          icon: 'warning',
+          title: 'Nicht genügend Spieler',
+          text: 'Es müssen mindestens 2 Spieler im Spiel sein, um zu starten.',
+          confirmButtonColor: '#dc2626',
+          iconColor:'#dc2626',
+          background: 'rgb(15, 15, 30)',
+          customClass: {
+            popup: 'custom-swal-popup'
+          },
+          color: '#fff',
+          confirmButtonText: 'Okay',
+        });
+        return;
+      }
       
       const gameId = this.$route.params.id;
       try {

@@ -41,8 +41,11 @@ export const useGameStore = defineStore('game', {
   getters: {
     isGameComplete: (state) => state.currentRound > state.totalRounds,
     allPlayersPredicted: (state) => {
-      const predictionValues = Object.values(state.predictions);
-      const validPredictions = predictionValues.filter(value => value !== undefined && value !== null && value !== '');
+      const validPredictions = Object.values(state.predictions).filter(
+        prediction => prediction !== undefined && prediction !== null && prediction !== ''
+      );
+      console.log("Valid predictions:", validPredictions);
+      console.log("All players predicted:", state.players.length, validPredictions.length);
       return state.players.length === validPredictions.length;
     },
     allPlayersBetOrFolded: (state) =>
@@ -68,6 +71,14 @@ export const useGameStore = defineStore('game', {
         this.currentPhase = (data.rounds && data.rounds[this.currentRound] && data.rounds[this.currentRound].phase) || data.phase || 1;
         this.players = data.players || [];
         console.log("Players array in store:", this.players);
+        
+        // Merge incoming predictions with existing local predictions
+        const incomingPredictions =
+          data.rounds && data.rounds[this.currentRound] && data.rounds[this.currentRound].predictions
+            ? data.rounds[this.currentRound].predictions
+            : {};
+        this.predictions = { ...this.predictions, ...incomingPredictions };
+    
         // Set the turn index from the database, if available. Otherwise, default to 0.
         if (data.currentTurnIndex !== undefined) {
           this.currentTurnIndex = data.currentTurnIndex;
@@ -78,8 +89,6 @@ export const useGameStore = defineStore('game', {
       this.unsubscribers.push(unsub);
     },
     
-    
-
     /**
      * Stop listening to game updates
      */
@@ -143,11 +152,23 @@ export const useGameStore = defineStore('game', {
     async setPlayerPrediction(playerId, price) {
       if (!this.gameId) return;
       await dbSetPlayerPrediction(this.gameId, this.currentRound, playerId, price);
-
+      
+      // Immediately update the local state.
+      this.predictions[playerId] = price;
+      console.log("Prediction set, current predictions:", this.predictions);
+      
+      // Instead of automatically changing phase, you can emit an event
+      // or set a flag to allow the user to confirm the prediction manually.
+      // For example, simply log that all predictions are complete:
       if (this.currentPhase === 2 && this.allPlayersPredicted) {
+        console.log("All players predicted.");
+        // Optionally, you could trigger the phase change here if desired.
         await this.nextPhase();
+      } else {
+        console.log("Not all players predicted yet, remaining in phase 2");
       }
     },
+      
 
     /**
      * Player places a bet

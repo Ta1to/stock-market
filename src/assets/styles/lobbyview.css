@@ -317,3 +317,7 @@ input:checked + .slider:before {
     box-shadow: none;
   }
 }
+
+.custom-swal-popup {
+  border-radius: 20px !important;
+}
