@@ -88,6 +88,7 @@ export const createGame = async (gameId, initialData) => {
   const data = {
     round: initialData.round || 1,
     phase: initialData.phase || 1,
+    currentTurnIndex: initialData.currentTurnIndex || 0,
     players: initialData.players || [],
     predictions: {},
     bets: {},
@@ -154,4 +155,16 @@ export const addLogEntry = async (gameId, message) => {
     message,
     timestamp: Date.now(),
   });
+};
+
+/**
+ * Update the current turn index in the game data.
+ */
+export const updateCurrentTurnIndex = async (gameId, turnIndex) => {
+  try {
+    await updateData(`games/${gameId}`, { currentTurnIndex: turnIndex });
+    console.log(`Turn index updated to ${turnIndex} in game ${gameId}`);
+  } catch (error) {
+    console.error(`Error updating turn index in game ${gameId}:`, error);
+  }
 };

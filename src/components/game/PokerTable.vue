@@ -8,6 +8,7 @@
         v-for="(player, index) in players"
         :key="player.id"
         :player="player"
+        :currentUserId="currentUserId"
         :style="getPositionStyle(index, players.length)"
       />
     </div>
@@ -25,6 +26,10 @@
       players: {
         type: Array,
         default: () => [],
+      },
+      currentUserId: {
+        type: String,
+        default: '',
       },
     },
     methods: {

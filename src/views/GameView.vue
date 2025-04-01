@@ -3,6 +3,12 @@
     <div class="bg-dark-light p-8 rounded-lg shadow-lg w-full max-w-4xl text-center">
       <h1 class="text-2xl mb-2">Stock Poker</h1>
       <h1>Round: {{ gameStore.currentRound }} / Phase: {{ gameStore.currentPhase }}</h1>
+      
+      <!-- Visual indicator for current turn -->
+      <p v-if="gameStore.players.length">
+        Current Turn: 
+        {{ currentTurnPlayer.name || currentTurnPlayer.id }}
+      </p>
 
        <!-- StockSelector as Modal -->
        <StockSelector
@@ -22,30 +28,28 @@
       />
 
       <!-- Poker Table with Playercards -->
-      <!-- Use gameStore.players here -->
       <PokerTable 
         v-if="gameStore.players.length" 
         :players="gameStore.players" 
+        :currentUserId="currentUserId"
       />
 
       <!-- Poker HUD with Bet, Check, Fold buttons -->
       <PokerHUD
         :initialCoins="1000"
+        :isMyTurn="isMyTurn"
         @bet-placed="handleBet"
         @check="handleCheck"
         @fold="handleFold"
       />
-
-      <button @click="openPopup">Make a Prediction</button>
       <LeaveGameButton />
     </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted, computed} from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
-
 import { auth } from '@/api/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useGameStore } from '@/services/game-store.js';
@@ -59,7 +63,6 @@ import StockSelector from '@/components/StockSelector.vue';
 
 export default {
   name: 'GameView',
-
   components: {
     LeaveGameButton,
     PokerTable,
@@ -67,7 +70,6 @@ export default {
     StockPrediction, 
     StockSelector
   },
-
   setup() {
     const route = useRoute();
     const gameStore = useGameStore();
@@ -75,35 +77,59 @@ export default {
     // Reactive ref for the current logged-in user
     const currentUser = ref(null);
 
-    // Local states for popup
+    // Local state for popup
     const showPopup = ref(false);
     const prediction = ref(null);
     
-    const isCreator = computed(() => {
-      return currentUser.value?.uid === gameStore.creator;
+    const isCreator = computed(() => currentUser.value?.uid === gameStore.creator);
+
+    // Computed property to determine if it's the current user's turn
+    const isMyTurn = computed(() => {
+      if (!currentUser.value || !gameStore.players.length) {
+        console.log("isMyTurn: missing user or players", { currentUser: currentUser.value, players: gameStore.players });
+        return false;
+      }
+      const currentPlayer = gameStore.players[gameStore.currentTurnIndex];
+      console.log("isMyTurn:", {
+        currentUserUid: currentUser.value.uid,
+        currentPlayer: currentPlayer
+      });
+      // Adjust property names (uid or id) as needed:
+      return currentUser.value.uid === currentPlayer.uid;
+    });
+
+    const currentUserId = computed(() => {
+      return currentUser.value ? currentUser.value.uid : '';
+    });
+
+
+    // Computed property for the current turn player's data
+    const currentTurnPlayer = computed(() => {
+      if (!gameStore.players.length) return {};
+      return gameStore.players[gameStore.currentTurnIndex];
     });
 
     onMounted(() => {
-      // Listen for Firebase Auth changes
       const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
         currentUser.value = user;
+        console.log("Auth state changed:", user);
         if (user) {
-          // Subscribe to the game once user is logged in
           const gameId = route.params.id;
           gameStore.subscribeToGame(gameId);
-        } else {
-          // Not logged in -> handle as needed (redirect, show message, etc.)
+          // Delay logging players to ensure subscription has updated them:
+          setTimeout(() => {
+            console.log("Players array after subscription:", gameStore.players);
+            console.log("Current turn index:", gameStore.currentTurnIndex);
+          }, 1000);
         }
       });
 
-      // Cleanup on unmount
       onUnmounted(() => {
         unsubscribeAuth();
         gameStore.unsubscribeFromGame();
       });
     });
 
-    /* StockPrediction popup logic */
     function openPopup() {
       showPopup.value = true;
     }
@@ -136,7 +162,6 @@ export default {
       const playerId = currentUser.value.uid;
       gameStore.fold(playerId);
     }
-
   
     async function handleStockSelection(){
       try {
@@ -152,7 +177,6 @@ export default {
       gameStore.nextPhase();
     }
 
-    // Return everything you need in the template
     return {
       currentUser,
       gameStore,
@@ -167,7 +191,10 @@ export default {
       isCreator,
       handleStockSelection,
       route, 
-      handleStockPhaseComplete
+      handleStockPhaseComplete,
+      isMyTurn,
+      currentTurnPlayer,
+      currentUserId
     };
   },
 };
