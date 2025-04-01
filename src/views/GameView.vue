@@ -22,7 +22,10 @@
 
       <!-- Stock Prediction Popup -->
       <StockPrediction
+        v-if="stockData"
         :visible="gameStore.currentPhase === 2"
+        :selectedStock="gameStore.selectedStock"
+        :stockData="stockData"
         @submit="handlePrediction"
         @close="closePopup"
       />
@@ -80,6 +83,32 @@ export default {
     // Local state for popup
     const showPopup = ref(false);
     const prediction = ref(null);
+
+    const stockData = computed(() => {
+      const currentRound = gameStore.currentRound;
+      const roundData = gameStore.rounds?.[currentRound];
+      
+      console.log("Current round data:", roundData);
+      
+      if (!roundData?.stocks?.[0]) {
+        console.warn("No stocks data available for current round");
+        return null;
+      }
+
+      // Erste Aktie aus dem stocks Array nehmen
+      const stockDetails = roundData.stocks[0];
+      console.log("Stock details:", stockDetails);
+
+      if (stockDetails?.history && Array.isArray(stockDetails.history)) {
+        return {
+          dates: stockDetails.history.map(entry => entry.date),
+          prices: stockDetails.history.map(entry => entry.price)
+        };
+      }
+
+      console.warn("Stock history not available or not in correct format");
+      return null;
+    });
     
     const isCreator = computed(() => currentUser.value?.uid === gameStore.creator);
 
@@ -174,7 +203,11 @@ export default {
 
     async function handleStockPhaseComplete() {
       console.log('Phase complete, moving to next phase');
-      gameStore.nextPhase();
+      if (gameStore.currentPhase === 2 && !gameStore.allPlayersPredicted) {
+        console.warn("Not all players have predicted yet.");
+        return;
+      }
+      await gameStore.nextPhase();
     }
 
     return {
@@ -194,7 +227,8 @@ export default {
       handleStockPhaseComplete,
       isMyTurn,
       currentTurnPlayer,
-      currentUserId
+      currentUserId, 
+      stockData
     };
   },
 };

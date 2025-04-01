@@ -1,21 +1,20 @@
 <template>
   <div class="stock-chart">
-    <div v-if="displayedChartData.labels.length" class="chart-container">
+    <div v-if="chartData.labels.length" class="chart-container">
       <Line 
-        :data="displayedChartData"
+        :data="chartData"
         :options="chartOptions"
       />
     </div>
     <div v-else class="no-data">Loading stock data...</div>
-    <button v-if="!showFullChart" @click="revealChart" class="reveal-button">Reveal Chart</button>
   </div>
 </template>
 
 <script>
-import { Line } from 'vue-chartjs'
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
+import { Line } from 'vue-chartjs';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 export default {
   name: 'StockChart',
@@ -28,10 +27,9 @@ export default {
       required: true
     }
   },
-
-  data() {
-    return {
-      chartData: {
+  computed: {
+    chartData() {
+      return {
         labels: this.stockData.dates || [],
         datasets: [{
           label: 'Stock Price',
@@ -49,7 +47,11 @@ export default {
           pointBorderWidth: 2,
           data: this.stockData.prices || []
         }]
-      },
+      };
+    }
+  },
+  data() {
+    return {
       chartOptions: {
         responsive: true,
         maintainAspectRatio: false,
@@ -115,7 +117,7 @@ export default {
 
 <style scoped>
 .chart-container {
-  width: 600px;
+  width: 100%;
   height: 300px;
   background: rgba(17, 24, 39, 0.6);
   border-radius: 16px;
@@ -129,22 +131,5 @@ export default {
   color: #f87979;
   text-align: center;
   padding: 20px;
-}
-
-.reveal-button {
-  padding: 12px 24px;
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-top: 20px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.reveal-button:hover {
-  background-color: #2563eb;
-  transform: translateY(-1px);
 }
 </style>

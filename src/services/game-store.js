@@ -32,6 +32,8 @@ export const useGameStore = defineStore('game', {
     highestBet: 0,  // Fixed typo here: changed from heigestBet to highestBet
     pot: 0,
 
+    rounds: {},
+
     unsubscribers: [],
 
     // This identifies the player whose turn it is (initially set to 0 => player 1)
@@ -65,12 +67,13 @@ export const useGameStore = defineStore('game', {
           console.warn("Game not found or no data at this path");
           return;
         }
-        console.log("Game data received:", data);
+        
         this.creator = data.creator;
         this.currentRound = data.currentRound || data.round || 1;
         this.currentPhase = (data.rounds && data.rounds[this.currentRound] && data.rounds[this.currentRound].phase) || data.phase || 1;
         this.players = data.players || [];
-        console.log("Players array in store:", this.players);
+        this.rounds = data.rounds || {}; 
+        this.rounds = { ...this.rounds, ...data.rounds };
         
         // Merge incoming predictions with existing local predictions
         const incomingPredictions =
@@ -151,6 +154,13 @@ export const useGameStore = defineStore('game', {
      */
     async setPlayerPrediction(playerId, price) {
       if (!this.gameId) return;
+
+      const player = this.players.find((p) => p.uid === playerId);
+      if (!player) {
+        console.warn("Player not found:", playerId);
+        return;
+      }
+
       await dbSetPlayerPrediction(this.gameId, this.currentRound, playerId, price);
       
       // Immediately update the local state.
@@ -182,11 +192,22 @@ export const useGameStore = defineStore('game', {
         console.warn('Wait for a betting phase!');
         return;
       }
+
+      const player = this.players.find((p) => p.uid === playerId);
+      if (!player) {
+        console.warn("Player not found:", playerId);
+        return;
+      }
     
       // Determine the player whose turn it is
       const currentPlayer = this.players[this.currentTurnIndex];
       if (currentPlayer.uid !== playerId) {
         console.warn("It's not your turn!" ,currentPlayer.id, playerId);
+        return;
+      }
+
+      if (player.chips < amount) {
+        console.warn("Player does not have enough chips:", playerId);
         return;
       }
     
