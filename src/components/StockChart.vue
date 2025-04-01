@@ -1,10 +1,7 @@
 <template>
   <div class="stock-chart">
     <div v-if="chartData.labels.length" class="chart-container">
-      <Line 
-        :data="chartData"
-        :options="chartOptions"
-      />
+      <Line :data="chartData" :options="chartOptions" />
     </div>
     <div v-else class="no-data">Loading stock data...</div>
   </div>
@@ -13,14 +10,13 @@
 <script>
 import { Line } from 'vue-chartjs';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+import { getChartConfig } from '@/utils/stockDataUtils';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 export default {
   name: 'StockChart',
-  components: {
-    Line
-  },
+  components: { Line },
   props: {
     stockData: {
       type: Object,
@@ -48,69 +44,10 @@ export default {
           data: this.stockData.prices || []
         }]
       };
+    },
+    chartOptions() {
+      return getChartConfig(true);
     }
-  },
-  data() {
-    return {
-      chartOptions: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: {
-          duration: 1000,
-          easing: 'easeInOutQuart'
-        },
-        interaction: {
-          intersect: false,
-          mode: 'index'
-        },
-        plugins: {
-          legend: {
-            display: false
-          },
-          tooltip: {
-            backgroundColor: 'rgba(17, 24, 39, 0.9)',
-            titleFont: {
-              size: 13
-            },
-            bodyFont: {
-              size: 12
-            },
-            padding: 10,
-            cornerRadius: 8,
-            displayColors: false
-          }
-        },
-        scales: {
-          y: {
-            grid: {
-              color: 'rgba(255, 255, 255, 0.05)',
-              drawBorder: false
-            },
-            ticks: {
-              color: 'rgba(255, 255, 255, 0.7)',
-              font: {
-                size: 11
-              },
-              callback: function(value) {
-                return '$ ' + value.toFixed(2);
-              }
-            }
-          },
-          x: {
-            grid: {
-              display: false
-            },
-            ticks: {
-              color: 'rgba(255, 255, 255, 0.7)',
-              font: {
-                size: 11
-              },
-              maxRotation: 0
-            }
-          }
-        }
-      }
-    };
   }
 };
 </script>

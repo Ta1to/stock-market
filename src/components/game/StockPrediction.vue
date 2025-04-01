@@ -2,9 +2,7 @@
   <div v-if="visible" class="modal-overlay">
     <div class="modal">
       <h2>Stock Price Prediction</h2>
-      <!-- Chart for the selected stock -->
-      <StockChart v-if="stockData" :stockData="getLimitedStockData" />
-      <!-- Prediction input -->
+      <StockChart v-if="stockData" :stockData="limitedStockData" />
       <div v-if="!hasPredicted" class="prediction-input">
         <input
           type="number"
@@ -22,38 +20,28 @@
 
 <script>
 import StockChart from '@/components/StockChart.vue';
+import { getLimitedStockData } from '@/utils/stockDataUtils';
 
 export default {
-  name: "StockPrediction",
+  name: 'StockPrediction',
   components: { StockChart },
   props: {
-    visible: {
-      type: Boolean,
-      default: false,
-    },
+    visible: Boolean,
     stockData: {
       type: Object,
-      required: true,
-    },
+      required: true
+    }
   },
   data() {
     return {
-      prediction: "",
+      prediction: '',
       hasPredicted: false,
-      submittedPrediction: null,
+      submittedPrediction: null
     };
   },
   computed: {
-    getLimitedStockData() {
-      if (!this.stockData?.dates || !this.stockData?.prices) return null;
-        const cuttoffIndexDate = -2; 
-        const cuttoffIndexPrice = -5;
-      return {
-
-        dates: this.stockData.dates.slice(0, cuttoffIndexDate),
-        // show stock pirce only 2 months before today 
-        prices: this.stockData.prices.slice(0, cuttoffIndexPrice)
-      };
+    limitedStockData() {
+      return getLimitedStockData(this.stockData, 3);
     }
   },
   methods: {
@@ -62,39 +50,30 @@ export default {
       if (!isNaN(predictionValue)) {
         this.hasPredicted = true;
         this.submittedPrediction = predictionValue;
-        this.$emit("submit", predictionValue);
-        this.reset();
-      } else {
-        console.error("Invalid prediction value");
+        this.$emit('submit', predictionValue);
+        this.prediction = '';
       }
-    },
-    reset() {
-      this.prediction = "";
-    },
-  },
+    }
+  }
 };
 </script>
 
 <style scoped>
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: grid;
+  place-items: center;
   z-index: 1000;
 }
 
 .modal {
   background: #000;
-  padding: 20px;
+  padding: 32px;
   border-radius: 8px;
-  width: 400px;
-  max-width: 90%;
+  width: 95%;
+  max-width: 1200px;
   text-align: center;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
@@ -127,10 +106,5 @@ export default {
   background: rgba(5, 105, 71, 0.2);
   border-radius: 4px;
   color: #fff;
-}
-
-.prediction-submitted p {
-  margin: 0;
-  font-size: 1.1em;
 }
 </style>

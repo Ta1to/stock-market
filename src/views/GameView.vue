@@ -1,5 +1,9 @@
 <template>
   <div class="min-h-screen flex flex-col items-center justify-center bg-dark text-white font-stock p-4">
+    <MiniChart 
+      v-if="gameStore.currentPhase === 3 && stockData"
+      :stockData="stockData"
+    />
     <div class="bg-dark-light p-8 rounded-lg shadow-lg w-full max-w-4xl text-center">
       <h1 class="text-2xl mb-2">Stock Poker</h1>
       <h1>Round: {{ gameStore.currentRound }} / Phase: {{ gameStore.currentPhase }}</h1>
@@ -63,6 +67,7 @@ import PokerTable from '@/components/game/PokerTable.vue';
 import PokerHUD from '@/components/game/PokerHUD.vue';
 import StockPrediction from '@/components/game/StockPrediction.vue';
 import StockSelector from '@/components/StockSelector.vue';  
+import MiniChart from '@/components/MiniChart.vue';
 
 export default {
   name: 'GameView',
@@ -71,7 +76,8 @@ export default {
     PokerTable,
     PokerHUD,
     StockPrediction, 
-    StockSelector
+    StockSelector,
+    MiniChart
   },
   setup() {
     const route = useRoute();
