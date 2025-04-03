@@ -130,10 +130,24 @@ export const placeBet = async (gameId, roundNumber, playerId, amount) => {
   };
 
 /**
+ * Get a player's current bet for a specific round
+ */
+export const getPlayerBet = async (gameId, roundNumber, playerId) => {
+  try {
+      const data = await readData(`games/${gameId}/rounds/${roundNumber}/bets/${playerId}`);
+      return data ? data.bet : 0;
+  } catch (error) {
+      console.error(`Error getting bet for player ${playerId}:`, error);
+      return 0;
+  }
+};
+
+
+/**
  * Fold
  */
-export const fold = async (gameId, playerId) => {
-  await writeData(`games/${gameId}/bets/${playerId}`, {
+export const fold = async (gameId, roundNumber, playerId) => {
+  await writeData(`games/${gameId}/rounds/${roundNumber}/bets/${playerId}`, {
     bet: 0,
     folded: true,
   });
@@ -167,4 +181,47 @@ export const updateCurrentTurnIndex = async (gameId, turnIndex) => {
   } catch (error) {
     console.error(`Error updating turn index in game ${gameId}:`, error);
   }
+};
+
+/**
+ * Update the players' chips in the game data.
+ */
+export const updatePlayerChips = async (gameId, playerId, newChipsAmount) => {
+  try {
+    const playersPath = `games/${gameId}/players`;
+    // Read current players array
+    const players = await readData(playersPath);
+    if (!players) {
+      console.warn("No players data found");
+      return;
+    }
+    // Update chip count for the specified player
+    const updatedPlayers = players.map(player => {
+      if (player.uid === playerId) {
+        return { ...player, chips: newChipsAmount };
+      }
+      return player;
+    });
+    // Write the updated players array back to the database
+    await writeData(playersPath, updatedPlayers);
+    console.log(`Player ${playerId} chips updated to ${newChipsAmount}`);
+  } catch (error) {
+    console.error("Error updating player chips:", error);
+  }
+};
+
+/**
+ * Update the highest bet in the database.
+ */
+export const updateHighestBet = async (gameId, newHighestBet) => {
+  console.log(`Updating highestBet to ${newHighestBet} at path: games/${gameId}/highestBet`);
+  await writeData(`games/${gameId}/highestBet`, newHighestBet);
+};
+
+/**
+ * Update the pot value in the database.
+ */
+export const dbUpdatePot = async (gameId, newPotValue) => {
+  console.log(`Updating pot to ${newPotValue} at path: games/${gameId}/pot`);
+  await writeData(`games/${gameId}/pot`, newPotValue);
 };

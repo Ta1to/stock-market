@@ -51,6 +51,10 @@ export default {
     stockData: {
       type: Object,
       required: true
+    },
+    roundNumber: {
+      type: Number,
+      required: true
     }
   },
   data() {
@@ -71,6 +75,23 @@ export default {
         sector: this.stockData?.sector || 'N/A', 
         industry: this.stockData?.industry || 'N/A'
       };
+    }
+  },
+  watch: {
+    // Reset prediction state when round changes
+    roundNumber() {
+      this.prediction = '';
+      this.hasPredicted = false;
+      this.submittedPrediction = null;
+      console.log('StockPrediction reset for new round:', this.roundNumber);
+    },
+    // Also reset when visibility changes
+    visible(newVal) {
+      if (newVal) {
+        this.prediction = '';
+        this.hasPredicted = false;
+        this.submittedPrediction = null;
+      }
     }
   },
   methods: {

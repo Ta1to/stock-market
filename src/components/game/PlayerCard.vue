@@ -25,7 +25,7 @@
     </div>
 
     <div class="player-info">
-      <div class="player-name">{{ player.name }}</div>
+      <div class="player-name">{{ player.name || player.id }}</div>
       <div class="player-chips">Chips: {{ player.chips }}</div>
     </div>
   </div>

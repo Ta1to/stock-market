@@ -7,19 +7,24 @@ import {
   updateRoundPhase,
   updateCurrentRound,
   updateCurrentTurnIndex,
+  updatePlayerChips,
+  updateHighestBet,
   setPlayerPrediction as dbSetPlayerPrediction,
   placeBet as dbPlaceBet,
   fold as dbFold,
   updatePot as dbUpdatePot,
   addLogEntry as dbAddLogEntry,
+  getPlayerBet as dbGetPlayerBet,
+  updateData, // NEW: Import the updateData function to initialize round structure in DB
 } from './game-database';
+
 
 export const useGameStore = defineStore('game', {
   state: () => ({
     currentRound: 1,
     currentPhase: 1,
     totalRounds: 3,
-    totalPhases: 3,
+    totalPhases: 5,
 
     // Store the ID of the current game
     gameId: null,
@@ -38,22 +43,12 @@ export const useGameStore = defineStore('game', {
 
     // This identifies the player whose turn it is (initially set to 0 => player 1)
     currentTurnIndex: 0,
+    errorMessage: null, // added property to hold error messages
+    selectedStock: null, // new property for the selected stock of the round
   }),
 
   getters: {
     isGameComplete: (state) => state.currentRound > state.totalRounds,
-    allPlayersPredicted: (state) => {
-      const validPredictions = Object.values(state.predictions).filter(
-        prediction => prediction !== undefined && prediction !== null && prediction !== ''
-      );
-      console.log("Valid predictions:", validPredictions);
-      console.log("All players predicted:", state.players.length, validPredictions.length);
-      return state.players.length === validPredictions.length;
-    },
-    allPlayersBetOrFolded: (state) =>
-      state.players.every(
-        (p) => state.bets[p.id] !== undefined || state.folds[p.id] === true
-      ),
   },
 
   actions: {
@@ -67,20 +62,30 @@ export const useGameStore = defineStore('game', {
           console.warn("Game not found or no data at this path");
           return;
         }
-        
+        console.log("Game data received:", data);
+
+        // Update the game state with the received data
         this.creator = data.creator;
         this.currentRound = data.currentRound || data.round || 1;
         this.currentPhase = (data.rounds && data.rounds[this.currentRound] && data.rounds[this.currentRound].phase) || data.phase || 1;
         this.players = data.players || [];
+        // New addition: sync the pot from the database
+        this.pot = data.pot || 0;
+        // NEW: Sync highestBet from database
+        this.highestBet = data.highestBet || 0;
         this.rounds = data.rounds || {}; 
         this.rounds = { ...this.rounds, ...data.rounds };
         
-        // Merge incoming predictions with existing local predictions
+        // Replace merging with direct assignment:
         const incomingPredictions =
           data.rounds && data.rounds[this.currentRound] && data.rounds[this.currentRound].predictions
             ? data.rounds[this.currentRound].predictions
             : {};
-        this.predictions = { ...this.predictions, ...incomingPredictions };
+        this.predictions = incomingPredictions;
+    
+        // NEW: Retrieve selectedStock from the current round's data in the database.
+        const roundData = data.rounds ? data.rounds[this.currentRound] : null;
+        this.selectedStock = roundData && roundData.selectedStock !== undefined ? roundData.selectedStock : null;
     
         // Set the turn index from the database, if available. Otherwise, default to 0.
         if (data.currentTurnIndex !== undefined) {
@@ -91,7 +96,7 @@ export const useGameStore = defineStore('game', {
       });
       this.unsubscribers.push(unsub);
     },
-    
+
     /**
      * Stop listening to game updates
      */
@@ -112,27 +117,51 @@ export const useGameStore = defineStore('game', {
      */
     async nextPhase() {
       if (!this.gameId) return;
-      
+
       let { currentRound, totalPhases } = this;
       const currentPhase = this.currentPhase;
-      
+
       let newPhase;
       let newRound = currentRound;
-      
+
       if (currentPhase < totalPhases) {
         newPhase = currentPhase + 1;
       } else {
+        // New round: reset selectedStock so the creator can choose stock for new round
         newRound = currentRound + 1;
         newPhase = 1;
+        console.log(`Advancing to new round ${newRound}; resetting selectedStock.`);
+        this.selectedStock = null;
+
+        try {
+          // Reset pot and highestBet in the database
+          await dbUpdatePot(this.gameId, 0);
+          await updateHighestBet(this.gameId, 0);
+          console.log("Pot and highestBet successfully reset in the database.");
+        } catch (error) {
+          console.error("Error resetting pot or highestBet:", error);
+        }
+
+        // Reset predictions when starting a new round:
+        this.predictions = {};
+
+        // Make sure the DB has a structure for the new round
+        await updateData(`games/${this.gameId}/rounds/${newRound}`, {
+          phase: 1,
+          isSpinning: false
+        });
       }
-      
+
       await updateRoundPhase(this.gameId, newRound, newPhase);
       await updateCurrentRound(this.gameId, newRound);
 
-      // Reset bets, folds and highestBet when moving to next phase/round
+      // Reset bets, folds, and highestBet when moving to next phase/round
       this.bets = {};
       this.folds = {};
       this.highestBet = 0;
+      this.currentRound = newRound;
+      this.currentPhase = newPhase;
+      console.log(`Updated state: round ${this.currentRound}, phase ${this.currentPhase}.`);
     },
 
     async startStockSelection(gameId) {
@@ -154,25 +183,23 @@ export const useGameStore = defineStore('game', {
      */
     async setPlayerPrediction(playerId, price) {
       if (!this.gameId) return;
-
+      
       const player = this.players.find((p) => p.uid === playerId);
       if (!player) {
         console.warn("Player not found:", playerId);
         return;
       }
-
+      
       await dbSetPlayerPrediction(this.gameId, this.currentRound, playerId, price);
       
       // Immediately update the local state.
       this.predictions[playerId] = price;
       console.log("Prediction set, current predictions:", this.predictions);
       
-      // Instead of automatically changing phase, you can emit an event
-      // or set a flag to allow the user to confirm the prediction manually.
-      // For example, simply log that all predictions are complete:
-      if (this.currentPhase === 2 && this.allPlayersPredicted) {
+      // Check if every player has predicted.
+      const allPredicted = this.players.every(p => this.predictions[p.uid] !== undefined);
+      if (this.currentPhase === 2 && allPredicted) {
         console.log("All players predicted.");
-        // Optionally, you could trigger the phase change here if desired.
         await this.nextPhase();
       } else {
         console.log("Not all players predicted yet, remaining in phase 2");
@@ -192,7 +219,7 @@ export const useGameStore = defineStore('game', {
         console.warn('Wait for a betting phase!');
         return;
       }
-
+    
       const player = this.players.find((p) => p.uid === playerId);
       if (!player) {
         console.warn("Player not found:", playerId);
@@ -202,36 +229,73 @@ export const useGameStore = defineStore('game', {
       // Determine the player whose turn it is
       const currentPlayer = this.players[this.currentTurnIndex];
       if (currentPlayer.uid !== playerId) {
-        console.warn("It's not your turn!" ,currentPlayer.id, playerId);
+        console.warn("It's not your turn!", currentPlayer.id, playerId);
         return;
       }
-
-      if (player.chips < amount) {
+    
+      // Get current player chips
+      const currentChips = player.chips;
+      
+      if (currentChips < amount) {
         console.warn("Player does not have enough chips:", playerId);
         return;
       }
     
       // Retrieve the player's existing bet (if any)
-      const oldBet = this.bets[playerId] || 0;
-      // Calculate the new total bet by adding the current amount to the old bet
+      const oldBet = await dbGetPlayerBet(this.gameId, this.currentRound, playerId);
       const newBet = oldBet + amount;
-    
-      // Store the bet in the database
-      await dbPlaceBet(this.gameId, this.currentRound, playerId, newBet);
-    
-      // Update the local state with the new total bet
-      this.bets[playerId] = newBet;
-    
-      // Update highestBet if necessary
-      if (newBet > this.highestBet) {
-        this.highestBet = newBet;
+      
+      // Bet validation with error message visible on screen
+      if (this.highestBet > 0 && newBet < this.highestBet) {
+        this.errorMessage = `Bet must be at least equal to the highest bet of ${this.highestBet}`;
+        return;
       }
+      
+      // Clear error message on successful bet
+      this.errorMessage = null;
     
-      // Move to the next active player's turn
-      this.moveToNextTurn();
+      // Calculate new chip amount
+      const newChipsAmount = currentChips - amount;
     
-      // Check if all players have either bet or folded
-      await this.checkBettingStatus();
+      try {
+        // Update the bet in the database
+        await dbPlaceBet(this.gameId, this.currentRound, playerId, newBet);
+        
+        // Update the player's chips in the database
+        await updatePlayerChips(this.gameId, playerId, newChipsAmount);
+    
+        // Update local state
+        this.bets[playerId] = newBet;
+        
+        // Update the player's chips in local state
+        this.players = this.players.map(p => {
+          if (p.uid === playerId) {
+            return { ...p, chips: newChipsAmount };
+          }
+          return p;
+        });
+    
+        // Update highestBet if necessary
+        if (newBet > this.highestBet) {
+          this.highestBet = newBet;
+          updateHighestBet(this.gameId, this.highestBet);
+        }
+    
+        // Immediately update the pot with this bet amount
+        this.pot += amount;
+        await dbUpdatePot(this.gameId, this.pot);
+    
+        const bettingComplete = await this.checkBettingStatus();
+        if (bettingComplete) {
+          console.log("Betting round complete, moving to next phase.");
+          await this.nextPhase();
+        } else {
+          this.moveToNextTurn();
+        }
+      } catch (error) {
+        console.error("Error placing bet:", error);
+        throw error;
+      }
     },
     
     /**
@@ -239,45 +303,76 @@ export const useGameStore = defineStore('game', {
      */
     async fold(playerId) {
       if (!this.gameId) return;
-    
-      // Store the fold status in the database
       await dbFold(this.gameId, this.currentRound, playerId);
-    
-      // Update the local fold status for the player
       this.folds[playerId] = true;
-    
-      // Move the turn to the next active player
       this.moveToNextTurn();
-    
-      // Check betting status
       await this.checkBettingStatus();
     },
     
     /**
      * Check if all players have placed bets or folded
+     * @returns {Promise<boolean>} True if betting round is complete, false if still ongoing
      */
     async checkBettingStatus() {
-      const activePlayers = this.players.filter((p) => !this.folds[p.id]);
+      console.log('Checking betting status...');
+      const activePlayers = this.players.filter((p) => !this.folds[p.uid]);
 
-      // If only one player remains, end the round automatically
+      // If only one player remains, award the pot, reset pot and highestBet, and end the round.
       if (activePlayers.length <= 1) {
-        console.log('Only one player left, round is over.');
-        await this.nextPhase(); 
-        return;
+          console.log('Only one player left, awarding pot and ending round.');
+          const winner = activePlayers[0];
+          // Award the pot to the winner: update the winner's chips.
+          const newChips = winner.chips + this.pot;
+          await updatePlayerChips(this.gameId, winner.uid, newChips);
+          
+          // Update local state: reflect the changed chips for the winner.
+          this.players = this.players.map(p => {
+            if (p.uid === winner.uid) {
+              return { ...p, chips: newChips };
+            }
+            return p;
+          });
+          
+          // Reset the pot and highestBet.
+          this.pot = 0;
+          this.highestBet = 0;
+          
+          const newRound = this.currentRound + 1;
+          
+          // Make sure the new round has its structure initialized in DB
+          await updateData(`games/${this.gameId}/rounds/${newRound}`, {
+            phase: 1,
+            isSpinning: false
+          });
+          
+          // Advance to next round in DB.
+          await updateCurrentRound(this.gameId, newRound);
+          await updateRoundPhase(this.gameId, newRound, 1);
+          
+          // Update local state accordingly.
+          this.currentRound = newRound;
+          this.currentPhase = 1;
+          this.bets = {};
+          this.folds = {};
+          
+          return true;
       }
+      
+      const playerBets = await Promise.all(
+          activePlayers.map(async (p) => {
+              const bet = await dbGetPlayerBet(this.gameId, this.currentRound, p.uid);
+              return { playerId: p.uid, bet };
+          })
+      );
 
-      // Check if all active players have placed the same bet
-      const allMatchedHighest = activePlayers.every((p) => {
-        const bet = this.bets[p.id] || 0;
-        return bet === this.highestBet;
-      });
+      const allMatchedHighest = playerBets.every((pb) => pb.bet === this.highestBet);
 
       if (allMatchedHighest) {
-        // Update the pot (optional)
-        this.pot += activePlayers.length * this.highestBet;
-        console.log('All players placed a bet.');
-        await this.nextPhase();
+          console.log('All players placed matching bets. Pot is:', this.pot);
+          return true;
       }
+
+      return false;
     },
 
     /**
@@ -318,6 +413,12 @@ export const useGameStore = defineStore('game', {
     async addLogEntry(message) {
       if (!this.gameId) return;
       await dbAddLogEntry(this.gameId, message);
+    },
+
+    // New action to set the selected stock for this round
+    setSelectedStock(stock) {
+      console.log("setSelectedStock called with:", stock);
+      this.selectedStock = stock;
     },
   },
 });

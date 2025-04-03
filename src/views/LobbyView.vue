@@ -137,13 +137,13 @@ export default {
     async startGame() {
       if (!this.isCreator) return;
 
-      if(this.users.length < 2) {
+      if (this.users.length < 2) {
         Swal.fire({ 
           icon: 'warning',
           title: 'Nicht genügend Spieler',
           text: 'Es müssen mindestens 2 Spieler im Spiel sein, um zu starten.',
           confirmButtonColor: '#dc2626',
-          iconColor:'#dc2626',
+          iconColor: '#dc2626',
           background: 'rgb(15, 15, 30)',
           customClass: {
             popup: 'custom-swal-popup'
@@ -157,25 +157,29 @@ export default {
       const gameId = this.$route.params.id;
       try {
         this.isLoading = true;
-
-        // Amount of rounds
+        
+        // Set this to false to disable API data validation
+        const validateStockAPI = false;
+        
         const numberOfRounds = 3;
+        const roundsData = [];
 
-        // Update game state
-        await updateData(`games/${gameId}`, { state: 'started' });
-
-        // Fetch for each round a random stock
         for (let round = 1; round <= numberOfRounds; round++) {
           const stocks = await getRandomStock(1);
           const stockDetails = await Promise.all(
             stocks.map(async (stock) => {
-              console.log('Getting info for stock:', stock); // Debug log 1
+              console.log('Getting info for stock:', stock);
               // Get price data
               const { dates, prices } = await getStockData(stock.symbol);
               // Get company description
               const companyInfo = await getStockInfo(stock.symbol);
-              console.log('Received company info for', stock.symbol, ':', companyInfo); // Debug log 2
+              console.log('Received company info for', stock.symbol, ':', companyInfo);
 
+              if (validateStockAPI && (!dates || !prices || dates.length === 0 || prices.length === 0 || !companyInfo)) {
+                console.error("API data missing for stock:", stock.symbol, { dates, prices, companyInfo });
+                throw new Error("API data missing");
+              }
+              
               return {
                 name: stock.name,
                 symbol: stock.symbol,
@@ -190,11 +194,28 @@ export default {
               };
             })
           );
+          roundsData.push({ round, stockDetails });
+        }
+
+        await updateData(`games/${gameId}`, { state: 'started' });
+        for (const { round, stockDetails } of roundsData) {
           await updateData(`games/${gameId}/rounds/${round}`, { stocks: stockDetails });
         }
 
       } catch (e) {
         console.error("Error starting game:", e);
+        Swal.fire({
+          icon: 'error',
+          title: 'API Fehler',
+          text: 'Derzeit gibt es Probleme mit den Stock APIs. Bitte versuchen Sie es später.',
+          confirmButtonColor: '#dc2626',
+          background: 'rgb(15, 15, 30)',
+          customClass: {
+            popup: 'custom-swal-popup'
+          },
+          color: '#fff',
+          confirmButtonText: 'Okay',
+        });
       } finally {
         this.isLoading = false;
       }

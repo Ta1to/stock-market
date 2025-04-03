@@ -51,12 +51,40 @@ export default {
     console.log('StockSelector created with gameId:', this.gameId, 'round:', this.roundNumber);
     this.setupListener();
   },
+  watch: {
+    roundNumber() {
+      // Reset local state for next round
+      this.stockSelected = false;
+      this.countdown = 5;
+      this.spinning = false;
+      this.displayedStock = this.$options.data().displayedStock;
+      console.log('Round changed to:', this.roundNumber, 'resetting state');
+      // Re-setup listener for the new round
+      this.setupListener();
+    },
+    visible(newVal) {
+      if (newVal) {
+        console.log('StockSelector became visible for round:', this.roundNumber);
+        this.setupListener();
+      }
+    }
+  },
   methods: {
     setupListener() {
+      console.log('Setting up listener for round:', this.roundNumber);
       const roundRef = ref(db, `games/${this.gameId}/rounds/${this.roundNumber}`);
       onValue(roundRef, (snapshot) => {
         const data = snapshot.val();
-        console.log('Round data:', data);
+        console.log('Round data received:', data);
+        
+        // If we have no data for this round yet, we need to initialize it for spinning
+        if (!data && this.isCreator) {
+          console.log('No data for round, initializing');
+          updateData(`games/${this.gameId}/rounds/${this.roundNumber}`, {
+            phase: 1,
+            isSpinning: false
+          });
+        }
         
         if (data?.isSpinning && !this.spinning) {
           this.startSpinAnimation();
@@ -114,6 +142,7 @@ export default {
         this.countdown--;
         if (this.countdown <= 0) {
           clearInterval(timer);
+          this.stockSelected = false;
           this.$emit('phase-complete');
         }
       }, 1000);

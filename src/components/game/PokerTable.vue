@@ -3,6 +3,11 @@
       <!-- Elliptical table surface -->
       <div class="table-surface"></div>
   
+      <!-- Display the pot in the center of the table -->
+      <div class="pot-display">
+        Pot: {{ pot }}
+      </div>
+  
       <!-- Render each player around the ellipse -->
       <PlayerCard
         v-for="(player, index) in players"
@@ -30,6 +35,10 @@
       currentUserId: {
         type: String,
         default: '',
+      },
+      pot: {
+        type: Number,
+        default: 0,
       },
     },
     methods: {
@@ -93,5 +102,16 @@
     border-radius: 35%;
     background: radial-gradient(ellipse at center, #056947 0%, #02331e 100%);
   }
+
+  /* New style for pot display */
+  .pot-display {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    z-index: 1;
+  }
   </style>
-  

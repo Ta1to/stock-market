@@ -59,7 +59,6 @@ export const getStockData = async (symbol) => {
             .reverse()
             .map(entry => {
                 const d = new Date(entry.datetime);
-                console.log('Parsed date:', d);
                 if (isNaN(d)) {
                     console.error('Invalid date value:', entry.datetime);
                     throw new Error('Invalid date value');

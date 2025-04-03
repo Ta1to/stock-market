@@ -1,5 +1,8 @@
 <template>
-  <button @click="leaveGame" class="leave-button">Leave Game</button>
+  <button @click="leaveGame" class="leave-button">
+    <i class="fas fa-sign-out-alt"></i>
+    <span>Leave</span>
+  </button>
 </template>
 
 <script>
@@ -80,19 +83,45 @@ export default {
 
 <style scoped>
 .leave-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 10px 20px;
-  background-color: #f44336;
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 1000;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  max-width: fit-content;
 }
 
 .leave-button:hover {
-  background-color: #d32f2f;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+.leave-button:active {
+  transform: translateY(1px);
+}
+
+@media (max-width: 480px) {
+  .leave-button {
+    top: 10px;
+    right: 10px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+  
+  .leave-button span {
+    display: none;
+  }
 }
 </style>
