@@ -53,6 +53,7 @@ import PlayerList from '../components/PlayerList.vue';
 import { ref, onValue} from "firebase/database";
 import { db } from "../api/firebase";
 import Swal from 'sweetalert2';
+import { getStockInfo } from '@/api/alphavantage';
 
 export default {
   name: 'LobbyView',
@@ -168,10 +169,20 @@ export default {
           const stocks = await getRandomStock(1);
           const stockDetails = await Promise.all(
             stocks.map(async (stock) => {
+              console.log('Getting info for stock:', stock); // Debug log 1
+              // Get price data
               const { dates, prices } = await getStockData(stock.symbol);
+              // Get company description
+              const companyInfo = await getStockInfo(stock.symbol);
+              console.log('Received company info for', stock.symbol, ':', companyInfo); // Debug log 2
+
               return {
                 name: stock.name,
                 symbol: stock.symbol,
+                description: companyInfo?.description || '',
+                sector: companyInfo?.sector || '',
+                industry: companyInfo?.industry || '',
+                website: companyInfo?.website || '',
                 history: dates.map((date, index) => ({
                   date,
                   price: prices[index]
@@ -179,8 +190,6 @@ export default {
               };
             })
           );
-
-          // Save a stock for each round in each round
           await updateData(`games/${gameId}/rounds/${round}`, { stocks: stockDetails });
         }
 

@@ -101,19 +101,22 @@ export default {
         return null;
       }
 
-      // Erste Aktie aus dem stocks Array nehmen
       const stockDetails = roundData.stocks[0];
-      console.log("Stock details:", stockDetails);
-
-      if (stockDetails?.history && Array.isArray(stockDetails.history)) {
-        return {
-          dates: stockDetails.history.map(entry => entry.date),
-          prices: stockDetails.history.map(entry => entry.price)
-        };
+      if (!stockDetails.history) {
+        console.warn("Stock history not available or not in correct format");
+        return null;
       }
-
-      console.warn("Stock history not available or not in correct format");
-      return null;
+      
+      return {
+        name: stockDetails.name,
+        symbol: stockDetails.symbol,
+        description: stockDetails.description,
+        sector: stockDetails.sector, 
+        industry: stockDetails.industry,
+        website: stockDetails.website,
+        dates: stockDetails.history.map(entry => entry.date),
+        prices: stockDetails.history.map(entry => entry.price)
+      };
     });
     
     const isCreator = computed(() => currentUser.value?.uid === gameStore.creator);
