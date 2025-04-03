@@ -45,12 +45,14 @@
         @close="closePopup"
       />
 
-      <!-- Poker Table with Playercards -->
+      <!-- Poker Table with Playercards - Pass current round data instead of just bets -->
       <PokerTable 
         v-if="gameStore.players.length" 
         :players="gameStore.players" 
         :currentUserId="currentUserId"
         :pot="gameStore.pot"
+        :currentRound="gameStore.currentRound"
+        :roundsData="gameStore.rounds"
       />
 
       <!-- Poker HUD with Bet, Check, Fold buttons -->

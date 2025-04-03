@@ -186,14 +186,13 @@ export default {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: white;
+  color: var(--accent-gold, gold);
   font-weight: bold;
   font-size: 18px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  background: rgba(0, 0, 0, 0.6);
+  text-shadow: 0 0 8px rgba(0, 0, 0, 1), 0 0 12px rgba(0, 0, 0, 1);
   padding: 4px 12px;
-  border-radius: 10px;
   z-index: 2;
+  background: transparent;
 }
 
 .bet-slider {

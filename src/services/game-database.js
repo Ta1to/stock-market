@@ -156,8 +156,13 @@ export const fold = async (gameId, roundNumber, playerId) => {
 /**
  * Update the pot
  */
-export const updatePot = async (gameId, newPotValue) => {
-  await writeData(`games/${gameId}/pot`, newPotValue);
+export const updatePot = async (gameId, roundNumber, newPotValue) => {
+  try {
+    await writeData(`games/${gameId}/rounds/${roundNumber}/pot`, newPotValue);
+    console.log(`Pot updated to ${newPotValue} for game ${gameId}, round ${roundNumber}`);
+  } catch (error) {
+    console.error(`Error updating pot for game ${gameId}, round ${roundNumber}:`, error);
+  }
 };
 
 /**
@@ -213,15 +218,7 @@ export const updatePlayerChips = async (gameId, playerId, newChipsAmount) => {
 /**
  * Update the highest bet in the database.
  */
-export const updateHighestBet = async (gameId, newHighestBet) => {
+export const updateHighestBet = async (gameId, roundNumber, newHighestBet) => {
   console.log(`Updating highestBet to ${newHighestBet} at path: games/${gameId}/highestBet`);
-  await writeData(`games/${gameId}/highestBet`, newHighestBet);
-};
-
-/**
- * Update the pot value in the database.
- */
-export const dbUpdatePot = async (gameId, newPotValue) => {
-  console.log(`Updating pot to ${newPotValue} at path: games/${gameId}/pot`);
-  await writeData(`games/${gameId}/pot`, newPotValue);
+  await writeData(`games/${gameId}/rounds/${roundNumber}/highestBet`, newHighestBet);
 };

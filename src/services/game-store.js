@@ -12,7 +12,7 @@ import {
   setPlayerPrediction as dbSetPlayerPrediction,
   placeBet as dbPlaceBet,
   fold as dbFold,
-  updatePot as dbUpdatePot,
+  updatePot,
   addLogEntry as dbAddLogEntry,
   getPlayerBet as dbGetPlayerBet,
   updateData, // NEW: Import the updateData function to initialize round structure in DB
@@ -70,9 +70,9 @@ export const useGameStore = defineStore('game', {
         this.currentPhase = (data.rounds && data.rounds[this.currentRound] && data.rounds[this.currentRound].phase) || data.phase || 1;
         this.players = data.players || [];
         // New addition: sync the pot from the database
-        this.pot = data.pot || 0;
+        this.pot = data.rounds[this.currentRound].pot || 0;
         // NEW: Sync highestBet from database
-        this.highestBet = data.highestBet || 0;
+        this.highestBet = data.rounds[this.currentRound].highestBet || 0;
         this.rounds = data.rounds || {}; 
         this.rounds = { ...this.rounds, ...data.rounds };
         
@@ -133,15 +133,6 @@ export const useGameStore = defineStore('game', {
         console.log(`Advancing to new round ${newRound}; resetting selectedStock.`);
         this.selectedStock = null;
 
-        try {
-          // Reset pot and highestBet in the database
-          await dbUpdatePot(this.gameId, 0);
-          await updateHighestBet(this.gameId, 0);
-          console.log("Pot and highestBet successfully reset in the database.");
-        } catch (error) {
-          console.error("Error resetting pot or highestBet:", error);
-        }
-
         // Reset predictions when starting a new round:
         this.predictions = {};
 
@@ -159,6 +150,7 @@ export const useGameStore = defineStore('game', {
       this.bets = {};
       this.folds = {};
       this.highestBet = 0;
+      this.pot = 0; 
       this.currentRound = newRound;
       this.currentPhase = newPhase;
       console.log(`Updated state: round ${this.currentRound}, phase ${this.currentPhase}.`);
@@ -278,12 +270,12 @@ export const useGameStore = defineStore('game', {
         // Update highestBet if necessary
         if (newBet > this.highestBet) {
           this.highestBet = newBet;
-          updateHighestBet(this.gameId, this.highestBet);
+          updateHighestBet(this.gameId, this.currentRound ,this.highestBet);
         }
     
         // Immediately update the pot with this bet amount
         this.pot += amount;
-        await dbUpdatePot(this.gameId, this.pot);
+        await updatePot(this.gameId, this.currentRound, this.pot);
     
         const bettingComplete = await this.checkBettingStatus();
         if (bettingComplete) {
@@ -397,14 +389,6 @@ export const useGameStore = defineStore('game', {
       this.currentTurnIndex = nextIndex;
       // Save the updated turn index to Firebase
       updateCurrentTurnIndex(this.gameId, nextIndex);
-    },
-
-    /**
-     * Update the pot in DB
-     */
-    async updatePot(newPotValue) {
-      if (!this.gameId) return;
-      await dbUpdatePot(this.gameId, newPotValue);
     },
 
     /**
