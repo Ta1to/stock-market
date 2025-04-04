@@ -21,7 +21,7 @@
 </template>
 
 <script>
-import { ref, onValue } from "firebase/database";
+import { ref, onValue, get } from "firebase/database";
 import { db } from '@/api/firebase';
 import { stockList } from '@/utils/stock-list';
 import { updateData } from '@/services/database';
@@ -44,7 +44,8 @@ export default {
       spinInterval: null, 
       currentIndex: 0, 
       stockSelected: false,
-      countdown: 5
+      countdown: 5,
+      preSelectedStock: null
     };
   },
   created() {
@@ -73,9 +74,26 @@ export default {
     setupListener() {
       console.log('Setting up listener for round:', this.roundNumber);
       const roundRef = ref(db, `games/${this.gameId}/rounds/${this.roundNumber}`);
+      
+      // First get the pre-selected stock from the database
+      get(roundRef).then((snapshot) => {
+        const data = snapshot.val();
+        console.log('Round data from get():', data);
+        
+        if (data?.stocks && data.stocks.length > 0) {
+          this.preSelectedStock = data.stocks[0];
+          console.log('Pre-selected stock for this round:', this.preSelectedStock);
+        } else {
+          console.warn('No stocks found in the database for this round');
+          console.log('Full data structure:', JSON.stringify(data));
+        }
+      }).catch(error => {
+        console.error('Error getting round data:', error);
+      });
+      
       onValue(roundRef, (snapshot) => {
         const data = snapshot.val();
-        console.log('Round data received:', data);
+        console.log('Round data received from onValue:', data);
         
         // If we have no data for this round yet, we need to initialize it for spinning
         if (!data && this.isCreator) {
@@ -86,29 +104,38 @@ export default {
           });
         }
         
+        // Update preSelectedStock from onValue as well in case it changed
+        if (data?.stocks && data.stocks.length > 0 && !this.preSelectedStock) {
+          this.preSelectedStock = data.stocks[0];
+          console.log('Updated preSelectedStock from onValue:', this.preSelectedStock);
+        }
+        
         if (data?.isSpinning && !this.spinning) {
           this.startSpinAnimation();
         } else if (!data?.isSpinning && this.spinning) {
-          this.stopSpinAnimation(data?.selectedStock?.symbol);
+          // Only pass the stock info needed for display, not the full object
+          this.stopSpinAnimation();
         }
       });
     },
 
     async initiateSpin() {
-      if (!this.isCreator) return;
-      console.log('Initiating spin...');
-
-      const randomStock = stockList[Math.floor(Math.random() * stockList.length)];
+      console.log('Initiate spin clicked, isCreator:', this.isCreator, 'preSelectedStock:', this.preSelectedStock);
+      
+      if (!this.isCreator || !this.preSelectedStock) {
+        console.warn('Cannot initiate spin: either not creator or no stock data available');
+        return;
+      }
+      
       try {
+        // Only update the spinning state, not the stock data
         await updateData(`games/${this.gameId}/rounds/${this.roundNumber}`, {
-          isSpinning: true,
-          selectedStock: randomStock
+          isSpinning: true
         });
 
         setTimeout(async () => {
           await updateData(`games/${this.gameId}/rounds/${this.roundNumber}`, {
-            isSpinning: false,
-            selectedStock: randomStock
+            isSpinning: false
           });
         }, 3000);
       } catch (error) {
@@ -126,14 +153,23 @@ export default {
       }, 100);
     },
 
-    stopSpinAnimation(finalStock) {
-      console.log('Stopping spin animation with stock:', finalStock);
+    stopSpinAnimation() {
+      console.log('Stopping spin animation with preSelectedStock:', this.preSelectedStock);
       clearInterval(this.spinInterval);
       this.spinning = false;
-      const stock = stockList.find(s => s.symbol === finalStock) || stockList[0];
-      this.displayedStock = stock;
+      
+      // Use the pre-selected stock if available
+      if (this.preSelectedStock) {
+        this.displayedStock = {
+          name: this.preSelectedStock.name,
+          symbol: this.preSelectedStock.symbol
+        };
+      } else {
+        this.displayedStock = stockList[0];
+      }
+      
       this.stockSelected = true;
-      this.$emit('stock-selected', stock);
+      this.$emit('stock-selected', this.displayedStock);
       this.startCountdown();
     }, 
     startCountdown() {
