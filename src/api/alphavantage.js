@@ -7,10 +7,12 @@ export const getStockInfo = async (symbol) => {
   try {
     console.log('Fetching data for symbol:', symbol); // Debug log 1
 
+    const formattedSymbol = symbol.toUpperCase();
+
     const response = await axios.get(BASE_URL, {
       params: {
+        symbol: formattedSymbol,
         function: 'OVERVIEW',
-        symbol: symbol,
         apikey: API_KEY
       }
     });
