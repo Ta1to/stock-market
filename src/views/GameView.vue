@@ -64,6 +64,17 @@
         @check="handleCheck"
         @fold="handleFold"
       />
+
+      <!-- stock news -->
+      <NewsPopUp
+        v-if="stockData" 
+        :visible="gameStore.currentPhase === 4"
+        :stockData="stockData"
+        :roundNumber="gameStore.currentRound"
+        @close="handleNewsClose"
+      />
+
+
       <LeaveGameButton class="leave-button" />
     </div>
   </div>
@@ -83,6 +94,7 @@ import PokerHUD from '@/components/game/PokerHUD.vue';
 import StockPrediction from '@/components/game/StockPrediction.vue';
 import StockSelector from '@/components/StockSelector.vue';  
 import MiniChart from '@/components/MiniChart.vue';
+import NewsPopUp from '@/components/game/NewsPopUp.vue';
 
 export default {
   name: 'GameView',
@@ -92,7 +104,8 @@ export default {
     PokerHUD,
     StockPrediction, 
     StockSelector,
-    MiniChart
+    MiniChart, 
+    NewsPopUp,
   },
   setup() {
     const route = useRoute();
@@ -190,6 +203,15 @@ export default {
       }
     });
 
+    watch(() => gameStore.currentPhase, async (newPhase, oldPhase) => {
+      console.log(`Phase changed from ${oldPhase} to ${newPhase}`);
+      
+      // open news popup after phase 3 automatically
+      if (newPhase === 4) {
+        console.log('Entering News Phase (4)');
+      }
+    });
+
     onMounted(() => {
       unsubscribeAuth = onAuthStateChanged(auth, (user) => {
         currentUser.value = user;
@@ -252,6 +274,12 @@ export default {
       const playerId = currentUser.value.uid;
       gameStore.fold(playerId);
     }
+
+    //close news popup and move to next phase
+    function handleNewsClose() {
+      console.log('News popup closed, moving to next phase');
+      gameStore.nextPhase();
+    }
   
     async function handleStockSelection(stock) {
       if (!isCreator.value) return;
@@ -287,7 +315,8 @@ export default {
       currentUserId, 
       stockData,
       currentUserChips,
-      bettingDisabled
+      bettingDisabled, 
+      handleNewsClose
     };
   },
 };

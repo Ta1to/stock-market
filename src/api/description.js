@@ -5,8 +5,6 @@ const BASE_URL = 'https://www.alphavantage.co/query';
 
 export const getStockInfo = async (symbol) => {
   try {
-    console.log('Fetching data for symbol:', symbol); // Debug log 1
-
     const formattedSymbol = symbol.toUpperCase();
 
     const response = await axios.get(BASE_URL, {
@@ -17,7 +15,6 @@ export const getStockInfo = async (symbol) => {
       }
     });
 
-    // Überprüfen ob die Daten für das richtige Symbol zurückkommen
     if (response.data.Symbol !== symbol) {
       console.error('Symbol mismatch:', {
         requested: symbol,
@@ -38,7 +35,6 @@ export const getStockInfo = async (symbol) => {
       website: response.data.Website || ''
     };
 
-    console.log('Processed stock info:', stockInfo); // Debug log 4
     return stockInfo;
 
   } catch (error) {

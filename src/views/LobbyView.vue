@@ -53,7 +53,8 @@ import PlayerList from '../components/PlayerList.vue';
 import { ref, onValue} from "firebase/database";
 import { db } from "../api/firebase";
 import Swal from 'sweetalert2';
-import { getStockInfo } from '@/api/alphavantage';
+import { getStockInfo } from '@/api/description';
+import { getStockNews } from '@/api/news';
 
 export default {
   name: 'LobbyView',
@@ -175,6 +176,10 @@ export default {
               const companyInfo = await getStockInfo(stock.symbol);
               console.log('Received company info for', stock.symbol, ':', companyInfo);
 
+              // Get news for this stock
+              const newsItems = await getStockNews(stock.symbol, 2); 
+              console.log('Received news for', stock.symbol, ':', newsItems.length, 'items');
+
               if (validateStockAPI && (!dates || !prices || dates.length === 0 || prices.length === 0 || !companyInfo)) {
                 console.error("API data missing for stock:", stock.symbol, { dates, prices, companyInfo });
                 throw new Error("API data missing");
@@ -187,6 +192,7 @@ export default {
                 sector: companyInfo?.sector || '',
                 industry: companyInfo?.industry || '',
                 website: companyInfo?.website || '',
+                news: newsItems,
                 history: dates.map((date, index) => ({
                   date,
                   price: prices[index]

@@ -23,7 +23,7 @@ export const useGameStore = defineStore('game', {
   state: () => ({
     currentRound: 1,
     currentPhase: 1,
-    totalRounds: 3,
+    totalRounds: 4,
     totalPhases: 5,
 
     // Store the ID of the current game
