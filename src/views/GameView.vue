@@ -1,9 +1,16 @@
 <template>
   <div class="game-wrapper">
+    <!--Mini chart for stock data-->
     <MiniChart 
-      v-if="gameStore.currentPhase === 3 && stockData"
+      v-if="gameStore.currentPhase >= 3 && stockData"
       :stockData="stockData"
       class="mini-chart"
+    />
+    <!--news pop Up about stocks in game-->
+    <MiniNews
+      v-if="gameStore.currentPhase >= 5 && stockData"
+      :stockData="stockData"
+      class="mini-news"
     />
     <div class="game-container">
       <div class="game-header">
@@ -93,8 +100,9 @@ import PokerTable from '@/components/game/PokerTable.vue';
 import PokerHUD from '@/components/game/PokerHUD.vue';
 import StockPrediction from '@/components/game/StockPrediction.vue';
 import StockSelector from '@/components/StockSelector.vue';  
-import MiniChart from '@/components/MiniChart.vue';
+import MiniChart from '@/components/game/MiniChart.vue';
 import NewsPopUp from '@/components/game/NewsPopUp.vue';
+import MiniNews from '@/components/game/MiniNews.vue';
 
 export default {
   name: 'GameView',
@@ -106,6 +114,7 @@ export default {
     StockSelector,
     MiniChart, 
     NewsPopUp,
+    MiniNews
   },
   setup() {
     const route = useRoute();
@@ -431,6 +440,10 @@ export default {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   border-radius: 10px;
   overflow: hidden;
+}
+
+.mini-news {
+  z-index: 99; 
 }
 
 .leave-button {
