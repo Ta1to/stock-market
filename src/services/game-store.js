@@ -23,8 +23,8 @@ export const useGameStore = defineStore('game', {
   state: () => ({
     currentRound: 1,
     currentPhase: 1,
-    totalRounds: 4,
-    totalPhases: 5,
+    totalRounds: 3,
+    totalPhases: 7,
 
     // Store the ID of the current game
     gameId: null,
@@ -205,8 +205,8 @@ export const useGameStore = defineStore('game', {
     async placeBet(playerId, amount) {
       if (!this.gameId) return;
     
-      // Allow betting only in phase 3 (betting phase)
-      if (this.currentPhase !== 3) {
+      // Allow betting only in phases 3, 5, and 7 the betting phases
+      if (this.currentPhase !== 3 && this.currentPhase !== 5 && this.currentPhase !== 7) {
         console.warn('Betting phase not active!', this.currentPhase);
         console.warn('Wait for a betting phase!');
         return;
@@ -295,6 +295,14 @@ export const useGameStore = defineStore('game', {
      */
     async fold(playerId) {
       if (!this.gameId) return;
+
+      // Allow folding only in phases 3, 5, and 7 the betting phases
+      if (this.currentPhase !== 3 && this.currentPhase !== 5 && this.currentPhase !== 7) {
+        console.warn('Folding not allowed outside betting phases!', this.currentPhase);
+        this.errorMessage = 'Folding is only allowed during betting phases!';
+        return;
+      }
+
       await dbFold(this.gameId, this.currentRound, playerId);
       this.folds[playerId] = true;
       this.moveToNextTurn();
@@ -307,6 +315,13 @@ export const useGameStore = defineStore('game', {
      */
     async checkBettingStatus() {
       console.log('Checking betting status...');
+
+      // Only check betting status in phases 3, 5, and 7
+      if (this.currentPhase !== 3 && this.currentPhase !== 5 && this.currentPhase !== 7) {
+        console.log("Not in a betting phase, skipping check");
+        return false;
+      }
+
       const activePlayers = this.players.filter((p) => !this.folds[p.uid]);
 
       // If only one player remains, award the pot, reset pot and highestBet, and end the round.

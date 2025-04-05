@@ -12,6 +12,13 @@
       :stockData="stockData"
       class="mini-news"
     />
+    <!--technical indicators pop up about stocks in game-->
+    <MiniIndicators
+      v-if="gameStore.currentPhase === 7 && stockData"
+      :stockData="stockData"
+      :roundNumber="gameStore.currentRound"
+      class="mini-indicators"
+    />
     <div class="game-container">
       <div class="game-header">
         <h1 class="game-title">Stock Poker</h1>
@@ -72,13 +79,22 @@
         @fold="handleFold"
       />
 
-      <!-- stock news -->
+      <!-- stock news pop up-->
       <NewsPopUp
         v-if="stockData" 
         :visible="gameStore.currentPhase === 4"
         :stockData="stockData"
         :roundNumber="gameStore.currentRound"
         @close="handleNewsClose"
+      />
+
+      <!-- Technical Indicators Popup (Phase 6) -->
+      <TechnicalIndicatorsPopUp
+        v-if="stockData"
+        :visible="gameStore.currentPhase === 6"
+        :stockData="stockData"
+        :roundNumber="gameStore.currentRound"
+        @close="handleIndicatorsClose"
       />
 
 
@@ -93,6 +109,8 @@ import { useRoute } from 'vue-router';
 import { auth } from '@/api/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useGameStore } from '@/services/game-store.js';
+import { PopupState } from '@/utils/popupEventBus';
+
 
 /* Components */
 import LeaveGameButton from '@/components/buttons/LeaveGameButton.vue';
@@ -103,6 +121,9 @@ import StockSelector from '@/components/StockSelector.vue';
 import MiniChart from '@/components/game/MiniChart.vue';
 import NewsPopUp from '@/components/game/NewsPopUp.vue';
 import MiniNews from '@/components/game/MiniNews.vue';
+import TechnicalIndicatorsPopUp from '@/components/game/TechnicalIndicator.vue';
+import MiniIndicators from '@/components/game/MiniIndicator.vue'; 
+
 
 export default {
   name: 'GameView',
@@ -114,7 +135,9 @@ export default {
     StockSelector,
     MiniChart, 
     NewsPopUp,
-    MiniNews
+    MiniNews, 
+    TechnicalIndicatorsPopUp, 
+    MiniIndicators
   },
   setup() {
     const route = useRoute();
@@ -193,8 +216,10 @@ export default {
       return gameStore.players[gameStore.currentTurnIndex];
     });
 
-    // New computed prop to disable betting in phase 4.
-    const bettingDisabled = computed(() => gameStore.currentPhase === 4);
+    // Updated computed prop to disable betting in non-betting phases
+    const bettingDisabled = computed(() => {
+      return gameStore.currentPhase !== 3 && gameStore.currentPhase !== 5 && gameStore.currentPhase !== 7;
+    });
 
     // Watch for error message changes and auto-dismiss after timeout
     watch(() => gameStore.errorMessage, (newMessage) => {
@@ -214,11 +239,8 @@ export default {
 
     watch(() => gameStore.currentPhase, async (newPhase, oldPhase) => {
       console.log(`Phase changed from ${oldPhase} to ${newPhase}`);
-      
-      // open news popup after phase 3 automatically
-      if (newPhase === 4) {
-        console.log('Entering News Phase (4)');
-      }
+      // close all popups when phase changes
+      PopupState.activePopup = null;
     });
 
     onMounted(() => {
@@ -289,6 +311,12 @@ export default {
       console.log('News popup closed, moving to next phase');
       gameStore.nextPhase();
     }
+
+    // Close technical indicators popup and move to next phase
+    function handleIndicatorsClose() {
+      console.log('Technical indicators popup closed, moving to next phase');
+      gameStore.nextPhase();
+    }
   
     async function handleStockSelection(stock) {
       if (!isCreator.value) return;
@@ -325,7 +353,8 @@ export default {
       stockData,
       currentUserChips,
       bettingDisabled, 
-      handleNewsClose
+      handleNewsClose, 
+      handleIndicatorsClose
     };
   },
 };
@@ -444,6 +473,10 @@ export default {
 
 .mini-news {
   z-index: 99; 
+}
+
+.mini-indicators {
+  z-index: 100;
 }
 
 .leave-button {

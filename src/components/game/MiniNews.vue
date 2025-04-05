@@ -23,6 +23,8 @@
   </template>
   
   <script>
+  import { PopupState } from '@/utils/popupEventBus';
+
   export default {
     name: 'MiniNews',
     props: {
@@ -33,29 +35,29 @@
     },
     data() {
       return {
-        isExpanded: false
+        popupId: 'mini-news'
       };
     },
     computed: {
+      isExpanded() {
+        return PopupState.isActivePopup(this.popupId);
+      },
       hasNews() {
         return this.stockData?.news && this.stockData.news.length > 0;
       }
     },
     methods: {
-      toggleExpand() {
-        this.isExpanded = !this.isExpanded;
-      },
-      formatSentiment(score) {
-        if (!score) return 'Neutral';
-        if (score > 0.25) return 'Positive';
-        if (score < -0.25) return 'Negative';
-        return 'Neutral';
-      },
-      getSentimentClass(score) {
-        if (!score) return 'neutral';
-        if (score > 0.25) return 'positive';
-        if (score < -0.25) return 'negative';
-        return 'neutral';
+    toggleExpand() {
+        if (this.isExpanded) {
+          PopupState.deactivatePopup(this.popupId);
+        } else {
+          PopupState.activatePopup(this.popupId);
+        }
+      }
+    },
+    beforeUnmount() {
+      if (this.isExpanded) {
+        PopupState.deactivatePopup(this.popupId);
       }
     }
   };
@@ -64,7 +66,7 @@
   <style scoped>
   .mini-news-container {
     position: fixed;
-    top: 90px; 
+    top: 90px;  
     left: 20px;
     background: rgba(17, 24, 39, 0.95);
     border-radius: 8px;

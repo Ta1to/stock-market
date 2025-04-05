@@ -12,6 +12,7 @@
   <script>
   import StockChart from '@/components/StockChart.vue';
   import { getLimitedStockData } from '@/utils/stockDataUtils';
+  import { PopupState } from '@/utils/popupEventBus';
   
   export default {
     name: 'MiniChart',
@@ -24,17 +25,29 @@
     },
     data() {
       return {
-        isExpanded: false
+        popupId: 'mini-chart'
       };
     },
     computed: {
+      isExpanded() {
+        return PopupState.isActivePopup(this.popupId);
+      },
       limitedStockData() {
         return getLimitedStockData(this.stockData, 3);
       }
     },
     methods: {
-      toggleExpand() {
-        this.isExpanded = !this.isExpanded;
+    toggleExpand() {
+        if (this.isExpanded) {
+          PopupState.deactivatePopup(this.popupId);
+        } else {
+          PopupState.activatePopup(this.popupId);
+        }
+      }
+    },
+    beforeUnmount() {
+      if (this.isExpanded) {
+        PopupState.deactivatePopup(this.popupId);
       }
     }
   };
