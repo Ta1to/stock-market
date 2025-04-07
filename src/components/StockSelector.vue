@@ -22,7 +22,7 @@
 
 <script>
 import { ref, onValue, get } from "firebase/database";
-import { db } from '@/api/firebase';
+import { db } from '@/api/firebase-api';
 import { stockList } from '@/utils/stock-list';
 import { updateData } from '@/services/database';
 

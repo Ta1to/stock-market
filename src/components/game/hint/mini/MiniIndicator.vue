@@ -41,7 +41,7 @@
 
 <script>
 import { PopupState } from '@/utils/popupEventBus';
-import { calculateAllIndicators } from '@/utils/inidcator';
+import { calculateAllIndicators } from '@/utils/indicator';
 
 export default {
   name: 'MiniIndicators',

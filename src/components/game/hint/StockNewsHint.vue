@@ -24,6 +24,8 @@
   </template>
   
   <script>
+  import { useTimer } from '@/utils/timerUtils';
+
   export default {
     name: 'StockNewsHint',
     props: {
@@ -39,17 +41,17 @@
     },
     data() {
       return {
-        remainingTime: 20, // countdown time in seconds for showing news
-        timerInterval: null
+        remainingTime: 20,
+        timer: null
       };
     },
     watch: {
         visible(newValue) {
-        if (newValue) {
-            this.startTimer();
-        } else {
-            this.clearTimer();
-        }
+          if (newValue) {
+            this.initTimer();
+          } else if (this.timer) {
+            this.timer.stop();
+          }
         }
     },
     computed: {
@@ -58,32 +60,25 @@
         }   
     },
     methods: {
-        startTimer() {
-            // Set timer to 3 seconds if there are no news, otherwise 20 seconds
-            this.remainingTime = this.hasNews ? 20 : 3;
-            this.clearTimer();
-            
-            this.timerInterval = setInterval(() => {
-                this.remainingTime--;
-                
-                if (this.remainingTime <= 0) {
-                this.clearTimer();
-                this.closeNews();
-                }
-            }, 1000);
-        },
-        clearTimer() {
-            if (this.timerInterval) {
-                clearInterval(this.timerInterval);
-                this.timerInterval = null;
-            }
+        initTimer() {
+          const duration = this.hasNews ? 20 : 3;
+          this.remainingTime = duration;
+          
+          this.timer = useTimer(
+            duration,
+            (time) => { this.remainingTime = time; },
+            () => { this.$emit('close'); }
+          );
+          this.timer.start();
         },
         closeNews() {
-        this.$emit('close');
-        },
+          this.$emit('close');
+        }
     }, 
     beforeUnmount() {
-        this.clearTimer();
+        if (this.timer) {
+          this.timer.stop();
+        }
     }
   };
   </script>

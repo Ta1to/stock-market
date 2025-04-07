@@ -1,0 +1,236 @@
+/**
+ * Common CSS styles for the stock-market application
+ * Contains shared variables and utility classes
+ */
+
+:root {
+  /* Color palette */
+  --bg-dark-primary: #0f0f1a;
+  --bg-dark-secondary: #1c1c2e;
+  --bg-dark-tertiary: #16213e;
+  --accent-gold: #ffd700;
+  --accent-gold-transparent: rgba(255, 215, 0, 0.7);
+  --accent-gold-subtle: rgba(255, 215, 0, 0.1);
+  --text-light: #e0e0e0;
+  --text-muted: #a0a0a0;
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+  --felt-green: #056947;
+  --felt-green-dark: #02331e;
+
+  /* Typography */
+  --font-family-mono: 'Roboto Mono', monospace;
+  --font-family-sans: 'Roboto', sans-serif;
+  
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-xxl: 3rem;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 25px 50px rgba(0, 0, 0, 0.5);
+  
+  /* Borders */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 20px;
+  --border-gold: 1px solid var(--accent-gold-transparent);
+  
+  /* Animations */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
+
+/* Common utility classes */
+.text-success { color: var(--success); }
+.text-error { color: var(--error); }
+.text-warning { color: var(--warning); }
+.text-info { color: var(--info); }
+.text-gold { color: var(--accent-gold); }
+.text-light { color: var(--text-light); }
+.text-muted { color: var(--text-muted); }
+
+.bg-dark-primary { background-color: var(--bg-dark-primary); }
+.bg-dark-secondary { background-color: var(--bg-dark-secondary); }
+.bg-dark-tertiary { background-color: var(--bg-dark-tertiary); }
+
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+.shadow-xl { box-shadow: var(--shadow-xl); }
+
+.rounded-sm { border-radius: var(--border-radius-sm); }
+.rounded-md { border-radius: var(--border-radius-md); }
+.rounded-lg { border-radius: var(--border-radius-lg); }
+.rounded-xl { border-radius: var(--border-radius-xl); }
+
+.border-gold { border: var(--border-gold); }
+
+.transition-fast { transition: var(--transition-fast); }
+.transition-normal { transition: var(--transition-normal); }
+.transition-slow { transition: var(--transition-slow); }
+
+/* Modal common styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background: var(--bg-dark-tertiary);
+  padding: var(--space-xl);
+  border-radius: var(--border-radius-lg);
+  width: 95%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  border: var(--border-gold);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--accent-gold);
+  margin: 0;
+}
+
+.modal-body {
+  margin-bottom: var(--space-lg);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+}
+
+/* Common button styles */
+.btn {
+  padding: var(--space-md) var(--space-xl);
+  border-radius: var(--border-radius-md);
+  font-weight: bold;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  border: none;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #ffcc00, #ff6600);
+  color: var(--bg-dark-primary);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #2c2c3e, #1a1a2e);
+  color: var(--text-light);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #059669, #065f46);
+  color: white;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+  color: white;
+}
+
+.btn:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Responsive breakpoints utility classes */
+@media (max-width: 480px) {
+  .hide-xs { display: none !important; }
+}
+
+@media (max-width: 768px) {
+  .hide-sm { display: none !important; }
+}
+
+@media (max-width: 1024px) {
+  .hide-md { display: none !important; }
+}
+
+@media (min-width: 1025px) {
+  .hide-lg { display: none !important; }
+}
+
+/* Color classes for indicators */
+.color-overbought {
+  color: #ef4444;
+}
+
+.color-oversold, .color-bullish {
+  color: #10b981;
+}
+
+.color-bearish {
+  color: #ef4444;
+}
+
+.color-neutral {
+  color: #ffd700;
+}
+
+/* Countdown timers */
+.countdown {
+  background: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-weight: bold;
+  min-width: 50px;
+  text-align: center;
+}
+
+/* Animation classes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .modal {
+    padding: 1.5rem;
+  }
+}

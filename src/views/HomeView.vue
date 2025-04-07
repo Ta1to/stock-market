@@ -54,47 +54,72 @@
 </template>
 
 <script>
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { ref, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
 import { writeData, readData, updateData } from "@/services/database";
 import LogoutButton from '../components/buttons/LogoutButton.vue';
+import { auth } from "@/api/firebase-api";
+
+// Composables
+import { useCurrentUser } from './composables/useCurrentUser';
+import { useErrorHandling } from './composables/useErrorHandling';
 
 export default {
   name: 'HomeView',
   components: {
     LogoutButton
   },
-  data() {
-    return {
-      showJoinGameModal: false,
-      joinCode: '',
-      isGamePublic: true,
-      publicGames: [],
-    };
-  },
-  methods: {
-    showJoinGame() {
-      this.showJoinGameModal = true;
-    },
+  setup() {
+    const router = useRouter();
     
-    closeJoinGameModal() {
-      this.showJoinGameModal = false;
-      this.joinCode = '';
-    },
+    // User management
+    const { currentUser } = useCurrentUser(auth);
     
-    async fetchGames() {
+    // Error handling
+    const { errorTimeout } = useErrorHandling({
+      errorMessage: ref(null)
+    });
+    
+    // Game state
+    const showJoinGameModal = ref(false);
+    const joinCode = ref('');
+    const isGamePublic = ref(true);
+    const publicGames = ref([]);
+    
+    /**
+     * Show the join game modal
+     */
+    function showJoinGame() {
+      showJoinGameModal.value = true;
+    }
+    
+    /**
+     * Close the join game modal
+     */
+    function closeJoinGameModal() {
+      showJoinGameModal.value = false;
+      joinCode.value = '';
+    }
+    
+    /**
+     * Fetch public games from the database
+     */
+    async function fetchGames() {
       try {
         const games = await readData("games");
-        this.publicGames = Object.entries(games || {})
+        publicGames.value = Object.entries(games || {})
           .filter(([, game]) => game.isPublic === true && (!game.state || game.state !== 'started'))
           .map(([id, game]) => ({ id, ...game }));
       } catch (error) {
         console.error("Error while loading games:", error);
       }
-    },
+    }
     
-    async joinGame(gameObject) {
-      const auth = getAuth();
-      const user = auth.currentUser;
+    /**
+     * Join an existing game
+     */
+    async function joinGame(gameObject) {
+      const user = currentUser.value;
       if (!user) return;
 
       try {
@@ -115,7 +140,7 @@ export default {
           // Called from join by code
           const games = await readData("games");
           gameId = Object.keys(games || {}).find(
-            key => games[key].code === this.joinCode
+            key => games[key].code === joinCode.value
           );
           if (!gameId) {
             console.error("No game found with the provided code!");
@@ -138,16 +163,18 @@ export default {
         });
 
         await updateData(`games/${gameId}`, { players: updatedPlayers });
-        this.$router.push(`/lobby/${gameId}`);
-        this.closeJoinGameModal();
+        router.push(`/lobby/${gameId}`);
+        closeJoinGameModal();
       } catch (e) {
         console.error("Error joining game:", e);
       }
-    },
+    }
     
-    async createGame() {
-      const auth = getAuth();
-      const user = auth.currentUser;
+    /**
+     * Create a new game
+     */
+    async function createGame() {
+      const user = currentUser.value;
       if (!user) return;
 
       try {
@@ -164,7 +191,7 @@ export default {
           creator: user.uid,
           createdAt: new Date().toISOString(),
           code: gameId,
-          isPublic: this.isGamePublic,
+          isPublic: isGamePublic.value,
           state: 'waiting', // or "not-started"
           currentRound: 1,
           totalRounds: 3,
@@ -186,21 +213,47 @@ export default {
         };
 
         await writeData(`games/${gameId}`, gameData);
-        this.$router.push(`/lobby/${gameId}`);
+        router.push(`/lobby/${gameId}`);
       } catch (e) {
         console.error("Error creating game:", e);
       }
     }
-  },
-  
-  created() {
-    this.fetchGames();
-    const auth = getAuth();
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        this.$router.push('/login');
+    
+    // Set up authentication watcher
+    const unsubscribeAuth = ref(null);
+    
+    onMounted(() => {
+      fetchGames();
+      
+      // Check authentication status and redirect if not logged in
+      unsubscribeAuth.value = auth.onAuthStateChanged((user) => {
+        if (!user) {
+          router.push('/login');
+        }
+      });
+    });
+    
+    onUnmounted(() => {
+      // Clean up resources
+      if (unsubscribeAuth.value) {
+        unsubscribeAuth.value();
+      }
+      
+      if (errorTimeout.value) {
+        clearTimeout(errorTimeout.value);
       }
     });
+    
+    return {
+      showJoinGameModal,
+      joinCode,
+      isGamePublic,
+      publicGames,
+      showJoinGame,
+      closeJoinGameModal,
+      joinGame,
+      createGame
+    };
   }
 }
 </script>

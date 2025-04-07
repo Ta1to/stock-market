@@ -46,99 +46,128 @@
 </template>
 
 <script>
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { onUnmounted, ref, watchEffect } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { updateData, deleteData } from "@/services/database";
-import { getRandomStock, getStockData } from '../api/stock';
+import { getRandomStock, getStockHistory } from '../api/stock-api';
 import PlayerList from '../components/PlayerList.vue';
-import { ref, onValue} from "firebase/database";
-import { db } from "../api/firebase";
+import { onValue, ref as dbRef } from "firebase/database";
+import { db } from "../api/firebase-api";
 import Swal from 'sweetalert2';
-import { getStockInfo } from '@/api/description';
-import { getStockNews } from '@/api/news';
+import { getStockInfo } from '@/api/description-api';
+import { getStockNews } from '@/api/news-api';
+import { auth } from '@/api/firebase-api';
+
+// Composables
+import { useCurrentUser } from './composables/useCurrentUser';
+import { useErrorHandling } from './composables/useErrorHandling';
 
 export default {
   name: 'LobbyView',
   components: {
     PlayerList
   },
-  data() {
-    return {
-      users: [],
-      creator: '',
-      joinCode: '',
-      isCreator: false,
-      gameState: '',
-      isPublic: false,
-      unsubscribe: null,
-      isLoading: false
-    };
-  },
-  methods: {
-    async updateGameVisibility() {
-      if (!this.isCreator) return;
+  setup() {
+    const route = useRoute();
+    const router = useRouter();
+    
+    // User management
+    const { currentUser } = useCurrentUser(auth);
+    
+    // Error handling
+    const { errorTimeout } = useErrorHandling({
+      errorMessage: ref(null)
+    });
+    
+    // Game state
+    const users = ref([]);
+    const creator = ref('');
+    const joinCode = ref('');
+    const isCreator = ref(false);
+    const gameState = ref('');
+    const isPublic = ref(false);
+    const unsubscribe = ref(null);
+    const isLoading = ref(false);
+    
+    /**
+     * Update game visibility (public/private)
+     */
+    async function updateGameVisibility() {
+      if (!isCreator.value) return;
       
-      const gameId = this.$route.params.id;
+      const gameId = route.params.id;
       try {
-        this.isLoading = true;
+        isLoading.value = true;
         await updateData(`games/${gameId}`, { 
-          isPublic: this.isPublic
+          isPublic: isPublic.value
         });
       } catch (e) {
         console.error("Error updating game visibility:", e);
       } finally {
-        this.isLoading = false;
+        isLoading.value = false;
       }
-    },
+    }
 
-    async removePlayer(playerUid) {
-      if (!this.isCreator) return;
+    /**
+     * Remove a player from the game
+     */
+    async function removePlayer(playerUid) {
+      if (!isCreator.value) return;
       
-      const gameId = this.$route.params.id;
+      const gameId = route.params.id;
       try {
-        const updatedPlayers = this.users.filter(user => user.uid !== playerUid);
+        const updatedPlayers = users.value.filter(user => user.uid !== playerUid);
         await updateData(`games/${gameId}`, { players: updatedPlayers });
       } catch (e) {
         console.error("Error removing player:", e);
       }
-    },
+    }
 
-    async deleteGame() {
-      const gameId = this.$route.params.id;
-      const auth = getAuth();
-      const user = auth.currentUser;
+    /**
+     * Delete the game (creator only)
+     */
+    async function deleteGame() {
+      const gameId = route.params.id;
+      const user = currentUser.value;
       
-      if (!user || user.uid !== this.creator) {
+      if (!user || user.uid !== creator.value) {
         console.error("Not authorized to delete this game");
         return;
       }
 
       try {
         await deleteData(`games/${gameId}`);
-        this.$router.push('/');
+        router.push('/');
       } catch (e) {
         console.error("Error deleting game:", e);
       }
-    },
-    async leaveGame() {
-    const gameId = this.$route.params.id;
-    const auth = getAuth();
-    const user = auth.currentUser;
-    
-    if (!user) return;
-    
-    try {
-      const updatedPlayers = this.users.filter(player => player.uid !== user.uid);
-      await updateData(`games/${gameId}`, { players: updatedPlayers });
-      this.$router.push('/');
-    } catch (e) {
-      console.error("Error leaving game:", e);
     }
-    },
+    
+    /**
+     * Leave the game (non-creator)
+     */
+    async function leaveGame() {
+      const gameId = route.params.id;
+      const user = currentUser.value;
+      
+      if (!user) return;
+      
+      try {
+        const updatedPlayers = users.value.filter(player => player.uid !== user.uid);
+        await updateData(`games/${gameId}`, { players: updatedPlayers });
+        router.push('/');
+      } catch (e) {
+        console.error("Error leaving game:", e);
+      }
+    }
 
-    async startGame() {
-      if (!this.isCreator) return;
+    /**
+     * Start the game (creator only)
+     */
+    async function startGame() {
+      if (!isCreator.value) return;
 
-      if (this.users.length < 2) {
+      if (users.value.length < 2) {
         Swal.fire({ 
           icon: 'warning',
           title: 'Nicht genügend Spieler',
@@ -155,9 +184,9 @@ export default {
         return;
       }
       
-      const gameId = this.$route.params.id;
+      const gameId = route.params.id;
       try {
-        this.isLoading = true;
+        isLoading.value = true;
         
         // Set this to false to disable API data validation
         const validateStockAPI = false;
@@ -171,7 +200,7 @@ export default {
             stocks.map(async (stock) => {
               console.log('Getting info for stock:', stock);
               // Get price data
-              const { dates, prices } = await getStockData(stock.symbol);
+              const { dates, prices } = await getStockHistory(stock.symbol);
               // Get company description
               const companyInfo = await getStockInfo(stock.symbol);
               console.log('Received company info for', stock.symbol, ':', companyInfo);
@@ -223,69 +252,91 @@ export default {
           confirmButtonText: 'Okay',
         });
       } finally {
-        this.isLoading = false;
+        isLoading.value = false;
       }
-    },
+    }
 
-    setupGameListener() {
-      const gameId = this.$route.params.id;
-      const auth = getAuth();
-      const user = auth.currentUser;
+    /**
+     * Set up real-time listener for game data
+     */
+    function setupGameListener() {
+      const gameId = route.params.id;
+      const user = currentUser.value;
 
       if (!user) {
-        this.$router.push('/login');
+        router.push('/login');
         return;
       }
 
-      this.unsubscribe = onValue(ref(db, `games/${gameId}`), (snapshot) => {
+      unsubscribe.value = onValue(dbRef(db, `games/${gameId}`), (snapshot) => {
         const gameData = snapshot.val();
         
         if (!gameData) {
-          this.$router.push('/');
+          router.push('/');
           return;
         }
 
         // Check if user is a player in this game
         const isPlayer = gameData.players?.some(player => player.uid === user.uid);
         if (!isPlayer) {
-          this.$router.push('/');
+          router.push('/');
           return;
         }
 
-        this.users = gameData.players || [];
-        this.creator = gameData.creator;
-        this.joinCode = gameData.code;
-        this.isPublic = gameData.isPublic;
-        this.gameState = gameData.state;
-        this.checkIfCreator();
+        users.value = gameData.players || [];
+        creator.value = gameData.creator;
+        joinCode.value = gameData.code;
+        isPublic.value = gameData.isPublic;
+        gameState.value = gameData.state;
+        checkIfCreator();
 
         if (gameData.state === 'started') {
-          this.$router.push(`/game/${gameId}`);
+          router.push(`/game/${gameId}`);
         }
       });
-    },
-
-    checkIfCreator() {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      this.isCreator = user && user.uid === this.creator;
     }
-  },
 
-  created() {
-    const auth = getAuth();
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        this.$router.push('/login');
+    /**
+     * Check if current user is the creator
+     */
+    function checkIfCreator() {
+      const user = currentUser.value;
+      isCreator.value = user && user.uid === creator.value;
+    }
+
+    // Watch for user authentication state changes
+    watchEffect(() => {
+      if (currentUser.value) {
+        setupGameListener();
       } else {
-        this.setupGameListener();
+        router.push('/login');
       }
     });
-  },
 
-  beforeUnmount() {
-    if (this.unsubscribe) {
-      this.unsubscribe();
+    // Cleanup on component unmount
+    onUnmounted(() => {
+      if (unsubscribe.value) {
+        unsubscribe.value();
+      }
+      
+      if (errorTimeout.value) {
+        clearTimeout(errorTimeout.value);
+      }
+    });
+
+    return {
+      users,
+      creator,
+      joinCode,
+      isCreator,
+      gameState,
+      isPublic,
+      isLoading,
+      updateGameVisibility,
+      removePlayer,
+      deleteGame,
+      leaveGame,
+      startGame
     }
   }
 }

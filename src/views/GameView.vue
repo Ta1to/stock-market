@@ -103,6 +103,7 @@
         @close="handleIndicatorsClose"
       />
 
+      <!-- Current Price Hint (Phase 8) -->
       <CurrentPriceHint
         v-if="stockData"
         :visible="gameStore.currentPhase === 8"
@@ -127,13 +128,12 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import { onMounted, onUnmounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { auth } from '@/api/firebase';
+import { auth } from '@/api/firebase-api';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useGameStore } from '@/services/game-store.js';
 import { PopupState } from '@/utils/popupEventBus';
-
 
 /* Components */
 import PokerTable from '@/components/game/PokerTable.vue';
@@ -148,6 +148,14 @@ import MiniIndicators from '@/components/game/hint/mini/MiniIndicator.vue';
 import CurrentPriceHint from '@/components/game/hint/CurrentPriceHint.vue';
 import MiniPrice from '@/components/game/hint/mini/MiniPrice.vue';
 import RoundWinner from '@/components/game/RoundWinner.vue';
+
+// Composables
+import { useCurrentUser } from './composables/useCurrentUser';
+import { useStockData } from './composables/useStockData';
+import { usePlayerState } from './composables/usePlayerState';
+import { useGamePhases } from './composables/useGamePhases';
+import { useErrorHandling } from './composables/useErrorHandling';
+import { useWinnerDetermination } from './composables/useWinnerDetermination';
 
 export default {
   name: 'GameView',
@@ -168,178 +176,54 @@ export default {
   setup() {
     const route = useRoute();
     const gameStore = useGameStore();
-    let errorTimeout = null;
-    let unsubscribeAuth = null; // Define here so it's accessible in onUnmounted
 
-    // Reactive ref for the current logged-in user
-    const currentUser = ref(null);
+    // User management
+    const { currentUser, currentUserId, unsubscribeAuth } = useCurrentUser(auth);
 
-    // Local state for popup
-    const showPopup = ref(false);
-    const prediction = ref(null);
+    // Stock data 
+    const { stockData } = useStockData(gameStore);
 
-    const roundWinner = ref(null);
-    const roundPot = ref(0);
+    // Player state
+    const { 
+      isCreator,
+      isMyTurn, 
+      currentUserChips,
+      currentTurnPlayer,
+      bettingDisabled
+    } = usePlayerState(currentUser, gameStore);
 
-    // Top-level computed for current user chips
-    const currentUserChips = computed(() => {
-      if (!currentUser.value || !gameStore.players.length) return 0;
-      const player = gameStore.players.find(p => p.uid === currentUser.value.uid);
-      console.log("Current user chips:", player.chips);
-      return player.chips;
-    });
+    // Error handling
+    const { errorTimeout } = useErrorHandling(gameStore);
 
-    const stockData = computed(() => {
-      const currentRound = gameStore.currentRound;
-      const roundData = gameStore.rounds?.[currentRound];
-      
-      console.log("Current round data:", roundData);
-      
-      if (!roundData?.stocks?.[0]) {
-        console.warn("No stocks data available for current round");
-        return null;
-      }
+    // Round winner determination
+    const { 
+      roundWinner, 
+      roundPot, 
+      handleWinnerDetermination 
+    } = useWinnerDetermination(gameStore, stockData);
 
-      const stockDetails = roundData.stocks[0];
-      if (!stockDetails.history) {
-        console.warn("Stock history not available or not in correct format");
-        return null;
-      }
+    // Game phases management
+    const { 
+      showPopup, 
+      closePopup, 
+      openPopup 
+    } = useGamePhases();
 
-      return {
-        name: stockDetails.name,
-        symbol: stockDetails.symbol,
-        description: stockDetails.description,
-        sector: stockDetails.sector, 
-        industry: stockDetails.industry,
-        website: stockDetails.website,
-        dates: stockDetails.history.map(entry => entry.date),
-        prices: stockDetails.history.map(entry => entry.price),
-      };
-    });
-    
-    const isCreator = computed(() => currentUser.value?.uid === gameStore.creator);
-
-    // Computed property to determine if it's the current user's turn
-    const isMyTurn = computed(() => {
-      if (!currentUser.value || !gameStore.players.length) {
-        console.log("isMyTurn: missing user or players", { currentUser: currentUser.value, players: gameStore.players });
-        return false;
-      }
-      const currentPlayer = gameStore.players[gameStore.currentTurnIndex];
-      console.log("isMyTurn:", {
-        currentUserUid: currentUser.value.uid,
-        currentPlayer: currentPlayer
-      });
-      // Adjust property names (uid or id) as needed:
-      return currentUser.value.uid === currentPlayer.uid;
-    });
-
-    const currentUserId = computed(() => {
-      return currentUser.value ? currentUser.value.uid : '';
-    });
-
-    // Computed property for the current turn player's data&& gameStore.currentPhase !== 9;
-    const currentTurnPlayer = computed(() => {
-      if (!gameStore.players.length) return {};
-      return gameStore.players[gameStore.currentTurnIndex];
-    });
-
-    // Updated computed prop to disable betting in non-betting phases
-    const bettingDisabled = computed(() => {
-      return gameStore.currentPhase !== 3 && gameStore.currentPhase !== 5 && gameStore.currentPhase !== 7 && gameStore.currentPhase !== 9;
-    });
-
-    // Watch for error message changes and auto-dismiss after timeout
-    watch(() => gameStore.errorMessage, (newMessage) => {
-      // Clear any existing timeout
-      if (errorTimeout) {
-        clearTimeout(errorTimeout);
-        errorTimeout = null;
-      }
-      
-      // If there's a new error message, set a timeout to clear it
-      if (newMessage) {
-        errorTimeout = setTimeout(() => {
-          gameStore.errorMessage = null;
-        }, 5000); // 5 seconds
-      }
-    });
-
+    // Watch for phase changes to determine winner in phase 10
     watch(() => gameStore.currentPhase, async (newPhase, oldPhase) => {
       console.log(`Phase changed from ${oldPhase} to ${newPhase}`);
-      // close all popups when phase changes
+      
+      // Close all popups when phase changes
       PopupState.activePopup = null;
 
       // If phase changes to 10, determine the round winner
       if (newPhase === 10) {
-        // Determine winner based on the active players
-        const activePlayers = gameStore.players.filter((p) => !gameStore.folds[p.uid]);
-        
-        if (activePlayers.length === 1) {
-          // Only one player left (others folded)
-          roundWinner.value = activePlayers[0];
-          // Add pot to winner's chips
-          gameStore.addChipsToPlayer(roundWinner.value.uid, gameStore.pot);
-        } else {
-          // Multiple players remain - determine winner by prediction accuracy
-          const currentPrice = stockData.value?.prices[stockData.value.prices.length - 1] || 0;
-          
-          let closestPlayers = [];
-          let smallestDifference = Infinity;
-          
-          // Find player(s) with closest prediction
-          activePlayers.forEach(player => {
-            const prediction = gameStore.predictions[player.uid];
-            if (prediction !== undefined) {
-              const difference = Math.abs(prediction - currentPrice);
-              
-              // If this player has a better prediction than current best
-              if (difference < smallestDifference) {
-                smallestDifference = difference;
-                closestPlayers = [player]; // Reset the array with only this player
-              } 
-              // If this player has the same prediction accuracy as current best
-              else if (difference === smallestDifference) {
-                closestPlayers.push(player); // Add this player to the winners
-              }
-            }
-          });
-          
-          // If multiple players have the same prediction accuracy (tie)
-          if (closestPlayers.length > 1) {
-            // Create a combined winner object indicating a tie and listing winners
-            roundWinner.value = {
-              isTie: true,
-              players: closestPlayers,
-              // Include a message about the pot being split
-              message: `Tie! The pot will be split among ${closestPlayers.length} players.`
-            };
-            
-            // Split the pot equally among tied players
-            const splitAmount = Math.floor(gameStore.pot / closestPlayers.length);
-            // Distribute chips to each winner
-            closestPlayers.forEach(player => {
-              gameStore.addChipsToPlayer(player.uid, splitAmount);
-            });
-          } else {
-            // Single winner
-            roundWinner.value = closestPlayers[0];
-            // Add pot to winner's chips
-            gameStore.addChipsToPlayer(roundWinner.value.uid, gameStore.pot);
-          }
-        }
-        
-        // Set the pot amount for display in winner component
-        roundPot.value = gameStore.pot;
-        
-        // Reset the pot for the next round
-        gameStore.resetPot();
+        handleWinnerDetermination();
       }
     });
 
     onMounted(() => {
-      unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      unsubscribeAuth.value = onAuthStateChanged(auth, (user) => {
         currentUser.value = user;
         console.log("Auth state changed:", user);
         if (user) {
@@ -356,24 +240,19 @@ export default {
 
     onUnmounted(() => {
       // Clear any active timeout when unmounting
-      if (errorTimeout) {
-        clearTimeout(errorTimeout);
+      if (errorTimeout.value) {
+        clearTimeout(errorTimeout.value);
       }
       
       // Unsubscribe from auth state changes
-      if (unsubscribeAuth) {
-        unsubscribeAuth();
+      if (unsubscribeAuth.value) {
+        unsubscribeAuth.value();
       }
       
       gameStore.unsubscribeFromGame();
     });
 
-    function openPopup() {
-      showPopup.value = true;
-    }
-    function closePopup() {
-      showPopup.value = false;
-    }
+    // User action handlers
     function handlePrediction(value) {
       if (!currentUser.value) return;
       const playerId = currentUser.value.uid;
@@ -388,12 +267,14 @@ export default {
       const playerId = currentUser.value.uid;
       gameStore.placeBet(playerId, amount);
     }
+
     function handleCheck() {
       console.log('Check action triggered');
       if (!currentUser.value) return;
       const playerId = currentUser.value.uid;
       gameStore.placeBet(playerId, 0);
     }
+
     function handleFold() {
       console.log('Fold action triggered');
       if (!currentUser.value) return;
@@ -433,13 +314,11 @@ export default {
     }
 
     return {
-      currentUser,
       gameStore,
       showPopup,
       openPopup,
       closePopup,
       handlePrediction,
-      prediction,
       handleBet,
       handleCheck,
       handleFold,

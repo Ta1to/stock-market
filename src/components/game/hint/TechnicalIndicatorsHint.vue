@@ -74,7 +74,8 @@
 </template>
 
 <script>
-import { calculateAllIndicators } from '@/utils/inidcator';
+import { calculateAllIndicators } from '@/utils/indicator';
+import { useTimer } from '@/utils/timerUtils';
 
 export default {
   name: 'TechnicalIndicatorsHint',
@@ -95,7 +96,7 @@ export default {
   data() {
     return {
       countdown: 15,
-      countdownTimer: null,
+      timer: null,
       indicators: null
     };
   },
@@ -152,10 +153,10 @@ export default {
   watch: {
     visible(newValue) {
       if (newValue) {
-        this.startCountdown();
+        this.initTimer();
         this.calculateIndicators();
-      } else {
-        this.stopCountdown();
+      } else if (this.timer) {
+        this.timer.stop();
       }
     },
     stockData: {
@@ -166,18 +167,14 @@ export default {
     }
   },
   methods: {
-    startCountdown() {
+    initTimer() {
       this.countdown = 15;
-      this.countdownTimer = setInterval(() => {
-        this.countdown--;
-        if (this.countdown <= 0) {
-          this.stopCountdown();
-          this.$emit('close');
-        }
-      }, 1000);
-    },
-    stopCountdown() {
-      clearInterval(this.countdownTimer);
+      this.timer = useTimer(
+        15, 
+        (time) => { this.countdown = time; }, 
+        () => { this.$emit('close'); }
+      );
+      this.timer.start();
     },
     formatVolume(volume) {
       if (!volume) return '0';
@@ -220,7 +217,9 @@ export default {
     }
   },
   beforeUnmount() {
-    this.stopCountdown();
+    if (this.timer) {
+      this.timer.stop();
+    }
   }
 };
 </script>

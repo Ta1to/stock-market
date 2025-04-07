@@ -8,12 +8,15 @@
 
 
 <script>
+
 export default {
-  name: 'App'
+  name: 'App',
 }
 </script>
 
 <style>
+@import './assets/styles/common.css';
+
 #app {
   font-family: 'Roboto Mono', monospace;
   -webkit-font-smoothing: antialiased;
