@@ -122,18 +122,27 @@
         @continue="handleWinnerContinue"
       />
 
+      <!-- Game Winner (after final round) -->
+      <GameWinner
+        v-if="gameStore.currentRound > gameStore.totalRounds && gameStore.players.length"
+        :visible="showGameWinner"
+        :players="gameStore.players"
+        :gameId="route.params.id"
+        :onGameEnd="handleGameEnd"
+      />
+
     </div>
   </div>
 </template>
 
 <script>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import { auth } from '@/api/firebase-api';
+import { useRoute, useRouter } from 'vue-router';
+import { auth, db } from '@/api/firebase-api';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useGameStore } from '@/services/game-store.js';
 import { PopupState } from '@/utils/popupEventBus';
-
+import { doc, deleteDoc } from 'firebase/firestore';
 
 /* Components */
 import PokerTable from '@/components/game/PokerTable.vue';
@@ -148,6 +157,7 @@ import MiniIndicators from '@/components/game/hint/mini/MiniIndicator.vue';
 import CurrentPriceHint from '@/components/game/hint/CurrentPriceHint.vue';
 import MiniPrice from '@/components/game/hint/mini/MiniPrice.vue';
 import RoundWinner from '@/components/game/RoundWinner.vue';
+import GameWinner from '@/components/game/GameWinner.vue';
 
 export default {
   name: 'GameView',
@@ -163,10 +173,13 @@ export default {
     MiniIndicators,
     CurrentPriceHint,
     MiniPrice,
-    RoundWinner
+    RoundWinner,
+    GameWinner
   },
   setup() {
     const route = useRoute();
+    // eslint-disable-next-line no-unused-vars
+    const router = useRouter();
     const gameStore = useGameStore();
     let errorTimeout = null;
     let unsubscribeAuth = null; // Define here so it's accessible in onUnmounted
@@ -180,6 +193,9 @@ export default {
 
     const roundWinner = ref(null);
     const roundPot = ref(0);
+    
+    // Game winner state
+    const showGameWinner = ref(false);
 
     // Top-level computed for current user chips
     const currentUserChips = computed(() => {
@@ -337,6 +353,14 @@ export default {
         gameStore.resetPot();
       }
     });
+    
+    // Watch for final round completion
+    watch(() => gameStore.currentRound, (newRound) => {
+      if (newRound > gameStore.totalRounds) {
+        console.log("Game is complete! Showing final winner.");
+        showGameWinner.value = true;
+      }
+    });
 
     onMounted(() => {
       unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -427,9 +451,32 @@ export default {
       await gameStore.nextPhase();
     }
 
+    // Handler for when the entire game ends
+    async function handleGameEnd() {
+      try {
+        // Delete the game from Firestore
+        const gameId = route.params.id;
+        await deleteDoc(doc(db, "games", gameId));
+        console.log(`Game ${gameId} deleted successfully`);
+        
+        // Reset game store
+        gameStore.resetGame();
+        
+        // Navigation will be handled by the GameWinner component
+      } catch (error) {
+        console.error("Error deleting game:", error);
+      }
+    }
+
     // Handler for when user clicks continue on the winner popup
     function handleWinnerContinue() {
-      gameStore.nextPhase();
+      // If this was the final round, show the game winner
+      if (gameStore.currentRound >= gameStore.totalRounds) {
+        showGameWinner.value = true;
+      } else {
+        // Otherwise, move to the next round
+        gameStore.nextPhase();
+      }
     }
 
     return {
@@ -457,7 +504,9 @@ export default {
       handleIndicatorsClose,
       roundWinner,
       roundPot,
-      handleWinnerContinue
+      handleWinnerContinue,
+      showGameWinner,
+      handleGameEnd
     };
   },
 };
