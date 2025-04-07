@@ -24,7 +24,7 @@ export const useGameStore = defineStore('game', {
     currentRound: 1,
     currentPhase: 1,
     totalRounds: 3,
-    totalPhases: 7,
+    totalPhases: 10,  // Updated from 9 to 10 to include the winner announcement phase
 
     // Store the ID of the current game
     gameId: null,
@@ -34,7 +34,7 @@ export const useGameStore = defineStore('game', {
     predictions: {},
     bets: {},
     folds: {},
-    highestBet: 0,  // Fixed typo here: changed from heigestBet to highestBet
+    highestBet: 0,
     pot: 0,
 
     rounds: {},
@@ -206,7 +206,7 @@ export const useGameStore = defineStore('game', {
       if (!this.gameId) return;
     
       // Allow betting only in phases 3, 5, and 7 the betting phases
-      if (this.currentPhase !== 3 && this.currentPhase !== 5 && this.currentPhase !== 7) {
+      if (this.currentPhase !== 3 && this.currentPhase !== 5 && this.currentPhase !== 7 && this.currentPhase !== 9) {
         console.warn('Betting phase not active!', this.currentPhase);
         console.warn('Wait for a betting phase!');
         return;
@@ -297,7 +297,7 @@ export const useGameStore = defineStore('game', {
       if (!this.gameId) return;
 
       // Allow folding only in phases 3, 5, and 7 the betting phases
-      if (this.currentPhase !== 3 && this.currentPhase !== 5 && this.currentPhase !== 7) {
+      if (this.currentPhase !== 3 && this.currentPhase !== 5 && this.currentPhase !== 7 && this.currentPhase !== 9) {
         console.warn('Folding not allowed outside betting phases!', this.currentPhase);
         this.errorMessage = 'Folding is only allowed during betting phases!';
         return;
@@ -317,7 +317,7 @@ export const useGameStore = defineStore('game', {
       console.log('Checking betting status...');
 
       // Only check betting status in phases 3, 5, and 7
-      if (this.currentPhase !== 3 && this.currentPhase !== 5 && this.currentPhase !== 7) {
+      if (this.currentPhase !== 3 && this.currentPhase !== 5 && this.currentPhase !== 7 && this.currentPhase !== 9) {
         console.log("Not in a betting phase, skipping check");
         return false;
       }
@@ -412,6 +412,51 @@ export const useGameStore = defineStore('game', {
     async addLogEntry(message) {
       if (!this.gameId) return;
       await dbAddLogEntry(this.gameId, message);
+    },
+
+    /**
+     * Add chips to a player's balance
+     * @param {string} playerId - The ID of the player to add chips to
+     * @param {number} amount - The amount of chips to add
+     */
+    async addChipsToPlayer(playerId, amount) {
+      if (!this.gameId) return;
+      
+      const player = this.players.find((p) => p.uid === playerId);
+      if (!player) {
+        console.warn("Player not found:", playerId);
+        return;
+      }
+      
+      // Calculate new chip amount
+      const newChipsAmount = player.chips + amount;
+      
+      try {
+        // Update the player's chips in the database
+        await updatePlayerChips(this.gameId, playerId, newChipsAmount);
+        
+        // Update local state: reflect the changed chips for the player
+        this.players = this.players.map(p => {
+          if (p.uid === playerId) {
+            return { ...p, chips: newChipsAmount };
+          }
+          return p;
+        });
+        
+        console.log(`Added ${amount} chips to player ${playerId}. New balance: ${newChipsAmount}`);
+      } catch (error) {
+        console.error("Error adding chips to player:", error);
+        throw error;
+      }
+    },
+    
+    /**
+     * Reset the pot to zero
+     */
+    async resetPot() {
+      if (!this.gameId) return;
+      this.pot = 0;
+      await updatePot(this.gameId, this.currentRound, 0);
     },
 
     // New action to set the selected stock for this round

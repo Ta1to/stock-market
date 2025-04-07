@@ -77,7 +77,7 @@
 import { calculateAllIndicators } from '@/utils/inidcator';
 
 export default {
-  name: 'TechnicalIndicatorsPopUp',
+  name: 'TechnicalIndicatorsHint',
   props: {
     visible: {
       type: Boolean,

@@ -14,10 +14,16 @@
     />
     <!--technical indicators pop up about stocks in game-->
     <MiniIndicators
-      v-if="gameStore.currentPhase === 7 && stockData"
+      v-if="gameStore.currentPhase >= 7 && stockData"
       :stockData="stockData"
       :roundNumber="gameStore.currentRound"
       class="mini-indicators"
+    />
+    <!--mini price display-->
+    <MiniPrice
+      v-if="gameStore.currentPhase >= 8 && stockData"
+      :stockData="stockData"
+      class="mini-price"
     />
     <div class="game-container">
       <div class="game-header">
@@ -80,7 +86,7 @@
       />
 
       <!-- stock news pop up-->
-      <NewsPopUp
+      <StockNewsHint
         v-if="stockData" 
         :visible="gameStore.currentPhase === 4"
         :stockData="stockData"
@@ -89,7 +95,7 @@
       />
 
       <!-- Technical Indicators Popup (Phase 6) -->
-      <TechnicalIndicatorsPopUp
+      <TechnicalIndicatorsHint
         v-if="stockData"
         :visible="gameStore.currentPhase === 6"
         :stockData="stockData"
@@ -97,8 +103,25 @@
         @close="handleIndicatorsClose"
       />
 
+      <CurrentPriceHint
+        v-if="stockData"
+        :visible="gameStore.currentPhase === 8"
+        :stockData="stockData"
+        :roundNumber="gameStore.currentRound"
+        @close="handleIndicatorsClose"
+      />
 
-      <LeaveGameButton class="leave-button" />
+      <!-- Round Winner Popup (Phase 10) -->
+      <RoundWinner
+        v-if="roundWinner"
+        :visible="gameStore.currentPhase === 10"
+        :winner="roundWinner"
+        :roundNumber="gameStore.currentRound"
+        :pot="roundPot"
+        :totalRounds="gameStore.totalRounds"
+        @continue="handleWinnerContinue"
+      />
+
     </div>
   </div>
 </template>
@@ -113,31 +136,34 @@ import { PopupState } from '@/utils/popupEventBus';
 
 
 /* Components */
-import LeaveGameButton from '@/components/buttons/LeaveGameButton.vue';
 import PokerTable from '@/components/game/PokerTable.vue';
 import PokerHUD from '@/components/game/PokerHUD.vue';
 import StockPrediction from '@/components/game/StockPrediction.vue';
 import StockSelector from '@/components/StockSelector.vue';  
-import MiniChart from '@/components/game/MiniChart.vue';
-import NewsPopUp from '@/components/game/NewsPopUp.vue';
-import MiniNews from '@/components/game/MiniNews.vue';
-import TechnicalIndicatorsPopUp from '@/components/game/TechnicalIndicator.vue';
-import MiniIndicators from '@/components/game/MiniIndicator.vue'; 
-
+import MiniChart from '@/components/game/hint/mini/MiniChart.vue';
+import StockNewsHint from '@/components/game/hint/StockNewsHint.vue';
+import MiniNews from '@/components/game/hint/mini/MiniNews.vue';
+import TechnicalIndicatorsHint from '@/components/game/hint/TechnicalIndicatorsHint.vue';
+import MiniIndicators from '@/components/game/hint/mini/MiniIndicator.vue'; 
+import CurrentPriceHint from '@/components/game/hint/CurrentPriceHint.vue';
+import MiniPrice from '@/components/game/hint/mini/MiniPrice.vue';
+import RoundWinner from '@/components/game/RoundWinner.vue';
 
 export default {
   name: 'GameView',
   components: {
-    LeaveGameButton,
     PokerTable,
     PokerHUD,
     StockPrediction, 
     StockSelector,
     MiniChart, 
-    NewsPopUp,
+    StockNewsHint,
     MiniNews, 
-    TechnicalIndicatorsPopUp, 
-    MiniIndicators
+    TechnicalIndicatorsHint, 
+    MiniIndicators,
+    CurrentPriceHint,
+    MiniPrice,
+    RoundWinner
   },
   setup() {
     const route = useRoute();
@@ -151,6 +177,9 @@ export default {
     // Local state for popup
     const showPopup = ref(false);
     const prediction = ref(null);
+
+    const roundWinner = ref(null);
+    const roundPot = ref(0);
 
     // Top-level computed for current user chips
     const currentUserChips = computed(() => {
@@ -210,7 +239,7 @@ export default {
       return currentUser.value ? currentUser.value.uid : '';
     });
 
-    // Computed property for the current turn player's data
+    // Computed property for the current turn player's data&& gameStore.currentPhase !== 9;
     const currentTurnPlayer = computed(() => {
       if (!gameStore.players.length) return {};
       return gameStore.players[gameStore.currentTurnIndex];
@@ -218,7 +247,7 @@ export default {
 
     // Updated computed prop to disable betting in non-betting phases
     const bettingDisabled = computed(() => {
-      return gameStore.currentPhase !== 3 && gameStore.currentPhase !== 5 && gameStore.currentPhase !== 7;
+      return gameStore.currentPhase !== 3 && gameStore.currentPhase !== 5 && gameStore.currentPhase !== 7 && gameStore.currentPhase !== 9;
     });
 
     // Watch for error message changes and auto-dismiss after timeout
@@ -241,6 +270,72 @@ export default {
       console.log(`Phase changed from ${oldPhase} to ${newPhase}`);
       // close all popups when phase changes
       PopupState.activePopup = null;
+
+      // If phase changes to 10, determine the round winner
+      if (newPhase === 10) {
+        // Determine winner based on the active players
+        const activePlayers = gameStore.players.filter((p) => !gameStore.folds[p.uid]);
+        
+        if (activePlayers.length === 1) {
+          // Only one player left (others folded)
+          roundWinner.value = activePlayers[0];
+          // Add pot to winner's chips
+          gameStore.addChipsToPlayer(roundWinner.value.uid, gameStore.pot);
+        } else {
+          // Multiple players remain - determine winner by prediction accuracy
+          const currentPrice = stockData.value?.prices[stockData.value.prices.length - 1] || 0;
+          
+          let closestPlayers = [];
+          let smallestDifference = Infinity;
+          
+          // Find player(s) with closest prediction
+          activePlayers.forEach(player => {
+            const prediction = gameStore.predictions[player.uid];
+            if (prediction !== undefined) {
+              const difference = Math.abs(prediction - currentPrice);
+              
+              // If this player has a better prediction than current best
+              if (difference < smallestDifference) {
+                smallestDifference = difference;
+                closestPlayers = [player]; // Reset the array with only this player
+              } 
+              // If this player has the same prediction accuracy as current best
+              else if (difference === smallestDifference) {
+                closestPlayers.push(player); // Add this player to the winners
+              }
+            }
+          });
+          
+          // If multiple players have the same prediction accuracy (tie)
+          if (closestPlayers.length > 1) {
+            // Create a combined winner object indicating a tie and listing winners
+            roundWinner.value = {
+              isTie: true,
+              players: closestPlayers,
+              // Include a message about the pot being split
+              message: `Tie! The pot will be split among ${closestPlayers.length} players.`
+            };
+            
+            // Split the pot equally among tied players
+            const splitAmount = Math.floor(gameStore.pot / closestPlayers.length);
+            // Distribute chips to each winner
+            closestPlayers.forEach(player => {
+              gameStore.addChipsToPlayer(player.uid, splitAmount);
+            });
+          } else {
+            // Single winner
+            roundWinner.value = closestPlayers[0];
+            // Add pot to winner's chips
+            gameStore.addChipsToPlayer(roundWinner.value.uid, gameStore.pot);
+          }
+        }
+        
+        // Set the pot amount for display in winner component
+        roundPot.value = gameStore.pot;
+        
+        // Reset the pot for the next round
+        gameStore.resetPot();
+      }
     });
 
     onMounted(() => {
@@ -332,6 +427,11 @@ export default {
       await gameStore.nextPhase();
     }
 
+    // Handler for when user clicks continue on the winner popup
+    function handleWinnerContinue() {
+      gameStore.nextPhase();
+    }
+
     return {
       currentUser,
       gameStore,
@@ -354,7 +454,10 @@ export default {
       currentUserChips,
       bettingDisabled, 
       handleNewsClose, 
-      handleIndicatorsClose
+      handleIndicatorsClose,
+      roundWinner,
+      roundPot,
+      handleWinnerContinue
     };
   },
 };
@@ -477,6 +580,10 @@ export default {
 
 .mini-indicators {
   z-index: 100;
+}
+
+.mini-price {
+  z-index: 95;
 }
 
 .leave-button {

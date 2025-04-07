@@ -3,29 +3,35 @@
       <div class="modal">
 
         <div class="modal-header">
-        <h2 class="modal-title">Latest News for {{ stockData?.name }}</h2>
-        <div class="timer">{{ remainingTime }}s</div>
-      </div>
-  
-        <div class="news-container" v-if="stockData?.news && stockData.news.length > 0">
-          <div v-for="(item, index) in stockData.news" :key="index" class="news-item">
-            <div class="news-header">
-              <h3 class="news-title">{{ item.title }}</h3>
-            </div>
-            <p class="news-summary">{{ item.summary }}</p>
-          </div>
+          <h2 class="modal-title">The Current Stock Price</h2>
+          <div class="timer">{{ remainingTime }}s</div>
         </div>
         
-        <div v-else class="no-news">
-          <p>No news available for this stock.</p>
+        <!-- Current Stock Price Display -->
+        <div class="current-price-container">
+          <h3 class="price-label">Current Price:</h3>
+          <div class="price-value">${{ currentPrice }}</div>
         </div>
+  
+        <div class="price-info-container" v-if="stockData?.news && stockData.news.length > 0">
+          <div v-for="(item, index) in stockData.news" :key="index" class="price-info-item">
+            <div class="price-info-header">
+              <h3 class="info-title">{{ item.title }}</h3>
+            </div>
+            <p class="info-summary">{{ item.summary }}</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button @click="closePrice">Close</button>
+        </div>
+        
       </div>
     </div>
   </template>
   
   <script>
   export default {
-    name: 'StockNews',
+    name: 'CurrentPriceHint',
     props: {
       visible: Boolean,
       stockData: {
@@ -55,11 +61,19 @@
     computed: {
         hasNews() {
             return this.stockData?.news && this.stockData.news.length > 0;
+        },
+        currentPrice() {
+            // Get the current price from the prices array
+            if (this.stockData && this.stockData.prices && this.stockData.prices.length > 0) {
+                return this.stockData.prices[this.stockData.prices.length - 1].toFixed(2);
+            }
+            return "N/A";
         }   
     },
     methods: {
         startTimer() {
-            this.remainingTime = 20;
+            // Set timer to 3 seconds if there are no info, otherwise 20 seconds
+            this.remainingTime = this.hasNews ? 20 : 3;
             this.clearTimer();
             
             this.timerInterval = setInterval(() => {
@@ -67,7 +81,7 @@
                 
                 if (this.remainingTime <= 0) {
                 this.clearTimer();
-                this.closeNews();
+                this.closePrice();
                 }
             }, 1000);
         },
@@ -77,7 +91,7 @@
                 this.timerInterval = null;
             }
         },
-        closeNews() {
+        closePrice() {
         this.$emit('close');
         },
     }, 
@@ -122,53 +136,69 @@
     color: #ffd700;
   }
   
-  .news-container {
+  .price-info-container {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
     margin-bottom: 2rem;
   }
   
-  .news-item {
+  .price-info-item {
     background: rgba(255, 255, 255, 0.05);
     padding: 1.5rem;
     border-radius: 8px;
     text-align: left;
   }
   
-  .news-header {
+  .price-info-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 1rem;
   }
   
-  .news-title {
+  .info-title {
     font-size: 1.1rem;
     color: #e0e0e0;
     margin: 0;
     flex: 1;
   }
   
-  .sentiment-badge {
-    padding: 0.3rem 0.8rem;
-    border-radius: 999px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    margin-left: 1rem;
-  }
-  
-  .news-summary {
+  .info-summary {
     line-height: 1.6;
     color: #d1d5db;
     font-size: 0.95rem;
   }
   
-  .no-news {
+  .no-info {
     background: rgba(255, 255, 255, 0.05);
     padding: 2rem;
     border-radius: 8px;
     margin-bottom: 2rem;
+  }
+  
+  .current-price-container {
+    background: rgba(21, 128, 61, 0.2);
+    border: 2px solid rgba(21, 128, 61, 0.5);
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .price-label {
+    font-size: 1.1rem;
+    color: #e0e0e0;
+    margin: 0 0 0.5rem 0;
+  }
+  
+  .price-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #4ade80;
   }
   
   @media (max-width: 768px) {
@@ -176,7 +206,7 @@
       padding: 1.5rem;
     }
     
-    .news-header {
+    .price-info-header {
       flex-direction: column;
     }
     
