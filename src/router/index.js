@@ -4,7 +4,7 @@ import LoginView from '../views/auth/LoginView.vue';
 import RegisterView from '../views/auth/RegisterView.vue';
 import LobbyView from '../views/LobbyView.vue';
 import GameView from '../views/GameView.vue';
-import app from "../api/firebase";
+import app from "../api/firebase-api";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 const routes = [

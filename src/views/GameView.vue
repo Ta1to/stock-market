@@ -129,7 +129,7 @@
 <script>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { auth } from '@/api/firebase';
+import { auth } from '@/api/firebase-api';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useGameStore } from '@/services/game-store.js';
 import { PopupState } from '@/utils/popupEventBus';
@@ -621,7 +621,7 @@ export default {
   max-width: 80%;
   margin-left: auto;
   margin-right: auto;
-  animation: fadeInError 0.3s ease-in-out, fadeOutError 0.5s ease-in-out 4.5s forwards;
+  animation: fadeInError 0.3s ease-in-out;
 }
 
 @keyframes fadeInError {
@@ -635,16 +635,7 @@ export default {
   }
 }
 
-@keyframes fadeOutError {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-}
+/* Removed fadeOutError animation to ensure error messages stay visible */
 
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
 

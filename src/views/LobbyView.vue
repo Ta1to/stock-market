@@ -48,13 +48,13 @@
 <script>
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { updateData, deleteData } from "@/services/database";
-import { getRandomStock, getStockData } from '../api/stock';
+import { getRandomStock, getStockHistory } from '../api/stock-api';
 import PlayerList from '../components/PlayerList.vue';
-import { ref, onValue} from "firebase/database";
-import { db } from "../api/firebase";
 import Swal from 'sweetalert2';
-import { getStockInfo } from '@/api/description';
-import { getStockNews } from '@/api/news';
+import { ref, onValue} from "firebase/database";
+import { db } from "../api/firebase-api";
+import { getStockInfo } from '@/api/description-api';
+import { getStockNews } from '@/api/news-api';
 
 export default {
   name: 'LobbyView',
@@ -171,7 +171,7 @@ export default {
             stocks.map(async (stock) => {
               console.log('Getting info for stock:', stock);
               // Get price data
-              const { dates, prices } = await getStockData(stock.symbol);
+              const { dates, prices } = await getStockHistory(stock.symbol);
               // Get company description
               const companyInfo = await getStockInfo(stock.symbol);
               console.log('Received company info for', stock.symbol, ':', companyInfo);
