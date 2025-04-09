@@ -16,6 +16,12 @@ export const ALPHA_VANTAGE_API = {
   KEY: process.env.VUE_APP_ALPHA_VANTAGE_API_KEY || 'Y3MEMJTB2EGOJ0VS' // Fallback for development
 };
 
+//Marketaux API configs
+export const MARKETAUX_API = {
+  BASE_URL: 'https://api.marketaux.com/v1/news/all',
+  KEY: process.env.VUE_APP_MARKETAUX_APIKEY || 'NJXVskMbqWHqAYFDwz8HJ6CHMf3R9A9V811IVDOd'//fallback for development
+};
+
 // Firebase configs
 export const FIREBASE_CONFIG = {
   apiKey: process.env.VUE_APP_FIREBASE_API_KEY,

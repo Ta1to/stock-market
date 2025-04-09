@@ -9,9 +9,6 @@
   
         <div class="news-container" v-if="stockData?.news && stockData.news.length > 0">
           <div v-for="(item, index) in stockData.news" :key="index" class="news-item">
-            <div class="news-header">
-              <h3 class="news-title">{{ item.title }}</h3>
-            </div>
             <p class="news-summary">{{ item.summary }}</p>
           </div>
         </div>

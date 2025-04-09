@@ -1,6 +1,7 @@
+
 import axios from 'axios';
-import { ALPHA_VANTAGE_API } from '../config/api';
 import { logError } from '../utils/errorUtils';
+import { MARKETAUX_API } from '../config/api';
 
 /**
  * NewsAPI provides functions for fetching stock news and sentiment analysis
@@ -16,11 +17,13 @@ export const getStockNews = async (symbol, limit = 3) => {
   try {
     const formattedSymbol = symbol.toUpperCase();
     
-    const response = await axios.get(ALPHA_VANTAGE_API.BASE_URL, {
+    const response = await axios.get(MARKETAUX_API.BASE_URL, {
       params: {
-        function: 'NEWS_SENTIMENT',
-        tickers: formattedSymbol,
-        apikey: ALPHA_VANTAGE_API.KEY
+        symbols: formattedSymbol,
+        language: 'en',
+        filter_entities: true,
+        limit: limit,
+        api_token: MARKETAUX_API.KEY
       }
     });
 
@@ -30,25 +33,18 @@ export const getStockNews = async (symbol, limit = 3) => {
       return [];
     }
 
-    if (response.data['Error Message']) {
-      const error = new Error(response.data['Error Message']);
+    if (response.data.error) {
+      const error = new Error(response.data.error.message || 'API Error');
       logError(error, 'NewsAPI');
       return [];
     }
 
-    // Check for API rate limit
-    if (response.data.Note) {
-      const warning = new Error(`API rate limit: ${response.data.Note}`);
-      logError(warning, 'NewsAPI:RateLimit');
-    }
-
-    const newsItems = response.data.feed || [];
-    const limitedItems = newsItems.slice(0, limit);
-
-    const processedNews = limitedItems.map(item => ({
-      title: item.title || '',
-      summary: item.summary || '',
-      sentiment: item.overall_sentiment_score || 0
+    // Extract and process news items
+    const newsItems = response.data.data || [];
+    
+    const processedNews = newsItems.map(item => ({
+      title: '',
+      summary: item.description || '',
     }));
 
     return processedNews;

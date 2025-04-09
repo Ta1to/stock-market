@@ -6,13 +6,7 @@
       <div class="news-content" v-show="isExpanded">
         <div v-if="hasNews" class="news-list">
           <div v-for="(item, index) in stockData.news" :key="index" class="news-item">
-            <div class="news-header">
-              <h3 class="news-title">{{ item.title }}</h3>
-              <div class="sentiment-badge" :class="getSentimentClass(item.sentiment)">
-                {{ formatSentiment(item.sentiment) }}
-              </div>
-            </div>
-            <p class="news-summary">{{ item.summary }}</p>
+            <p class="news-summary">{{ item.summary }}</p>              
           </div>
         </div>
         <div v-else class="no-news">
@@ -131,32 +125,7 @@
     color: #e0e0e0;
     margin: 0;
     flex: 1;
-  }
-  
-  .sentiment-badge {
-    padding: 2px 8px;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    margin-left: 8px;
-    white-space: nowrap;
-  }
-  
-  .positive {
-    background-color: rgba(16, 185, 129, 0.2);
-    color: rgb(16, 185, 129);
-  }
-  
-  .negative {
-    background-color: rgba(239, 68, 68, 0.2);
-    color: rgb(239, 68, 68);
-  }
-  
-  .neutral {
-    background-color: rgba(107, 114, 128, 0.2);
-    color: rgb(156, 163, 175);
-  }
-  
+  }  
   .news-summary {
     line-height: 1.5;
     color: #d1d5db;
@@ -179,12 +148,6 @@
     
     .news-header {
       flex-direction: column;
-    }
-    
-    .sentiment-badge {
-      margin-left: 0;
-      margin-top: 4px;
-      align-self: flex-start;
     }
   }
   </style>
