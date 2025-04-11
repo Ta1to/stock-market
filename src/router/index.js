@@ -46,7 +46,7 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const auth = getAuth(app); // Ensure Firebase is initialized before using getAuth
+  const auth = getAuth(app);
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   onAuthStateChanged(auth, (user) => {
     if (requiresAuth && !user) {
