@@ -1,5 +1,5 @@
 <template>
-  <div class="mini-indicators-container" :class="{ expanded: isExpanded }">
+  <div class="mini-indicators-container" :class="{ expanded: isExpanded }" v-show="!isAnyModalActive">
     <div class="mini-indicators-header" @click="toggleExpand">
       <h3>Technical Indicators</h3>
       <button class="expand-button">
@@ -21,27 +21,12 @@
           {{ indicators.macd.value.toFixed(2) }}
         </div>
       </div>
-      
-      <div class="indicator-item" v-if="indicators">
-        <div class="indicator-label">SMA (20):</div>
-        <div class="indicator-value">
-          {{ indicators.sma.toFixed(2) }}
-        </div>
-      </div>
-      
-      <div class="indicator-item" v-if="indicators">
-        <div class="indicator-label">Volume:</div>
-        <div class="indicator-value">
-          {{ formatVolume(indicators.volume) }}
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script>
 import { PopupState } from '@/utils/popupEventBus';
-import { calculateAllIndicators } from '@/utils/indicator';
 
 export default {
   name: 'MiniIndicators',
@@ -64,17 +49,20 @@ export default {
   computed: {
     isExpanded() {
       return PopupState.isActivePopup(this.popupId);
+    }, 
+    isAnyModalActive() {
+      return PopupState.isAnyModalActive();
     }
   },
   watch: {
     stockData: {
       immediate: true,
       handler() {
-        this.calculateIndicators();
+        this.loadIndicators();
       }
     },
     roundNumber() {
-      this.calculateIndicators();
+      this.loadIndicators();
     }
   },
   methods: {
@@ -85,16 +73,6 @@ export default {
         PopupState.activatePopup(this.popupId);
       }
     },
-    formatVolume(volume) {
-      if (!volume) return '0';
-      if (volume >= 1000000) {
-        return (volume / 1000000).toFixed(2) + 'M';
-      }
-      if (volume >= 1000) {
-        return (volume / 1000).toFixed(0) + 'K';
-      }
-      return volume.toString();
-    },
     getRsiClass(rsi) {
       if (rsi > 70) return 'overbought';
       if (rsi < 30) return 'oversold';
@@ -102,22 +80,41 @@ export default {
     },
     getMacdClass() {
       if (!this.indicators) return '';
-      if (this.indicators.macd.value > this.indicators.macd.signal) return 'bullish';
+      const macdValue = this.indicators.macd.value;
+      const signalValue = this.indicators.macd.signal;
+      
+      // Strong bullish: Positive MACD and above signal line
+      if (macdValue > 0 && macdValue > signalValue) return 'bullish';
+      
+      // Weak bullish: Negative MACD but crossing above signal line (momentum changing)
+      if (macdValue <= 0 && macdValue > signalValue) return 'weak-bullish';
+      
+      // Weak bearish: Positive MACD but crossing below signal line (momentum weakening)
+      if (macdValue > 0 && macdValue <= signalValue) return 'weak-bearish';
+      
+      // Strong bearish: Negative MACD and below signal line
       return 'bearish';
     },
-    calculateIndicators() {
+    loadIndicators() {
       try {
-        console.log("MiniIndicator: Calculating indicators from actual stock data");
-        this.indicators = calculateAllIndicators(this.stockData);
-        console.log("MiniIndicator: Calculated indicators:", this.indicators);
+        console.log("MiniIndicator: Loading indicators from fetched data");
+        if (this.stockData?.technicalIndicators) {
+          this.indicators = {
+            rsi: this.stockData.technicalIndicators.rsi,
+            macd: this.stockData.technicalIndicators.macd
+          };
+          console.log("MiniIndicator: Loaded indicators:", this.indicators);
+        } else {
+          console.warn("No technical indicators available for", this.stockData?.symbol);
+        }
       } catch (error) {
-        console.error('Error calculating indicators:', error);
+        console.error('Error loading indicators:', error);
       }
     }
   },
   mounted() {
     console.log("MiniIndicator component mounted");
-    this.calculateIndicators();
+    this.loadIndicators();
   }, 
   beforeUnmount() {
     if (this.isExpanded) {
@@ -128,7 +125,6 @@ export default {
 </script>
 
 <style scoped>
-/* CSS bleibt unverändert */
 .mini-indicators-container {
   position: fixed;
   top: 160px;
@@ -207,11 +203,19 @@ export default {
 }
 
 .bullish {
-  color: #10b981;
+  color: #10b981; /* Strong green for bullish */
+}
+
+.weak-bullish {
+  color: #7acea3; /* Lighter green for weak bullish */
 }
 
 .bearish {
-  color: #ef4444;
+  color: #ef4444; /* Strong red for bearish */
+}
+
+.weak-bearish {
+  color: #f1a3a3; /* Lighter red for weak bearish */
 }
 
 .neutral {

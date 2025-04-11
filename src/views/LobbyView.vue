@@ -55,6 +55,7 @@ import { ref, onValue} from "firebase/database";
 import { db } from "../api/firebase-api";
 import { getStockInfo } from '@/api/description-api';
 import { getStockNews } from '@/api/news-api';
+import { fetchTechnicalIndicators } from '@/api/indicator-api';
 
 export default {
   name: 'LobbyView',
@@ -180,6 +181,10 @@ export default {
               const newsItems = await getStockNews(stock.symbol, 2); 
               console.log('Received news for', stock.symbol, ':', newsItems.length, 'items');
 
+              // Get technical indicators
+              const technicalIndicators = await fetchTechnicalIndicators(stock.symbol);
+              console.log('Received technical indicators for', stock.symbol, ':', technicalIndicators);
+
               if (validateStockAPI && (!dates || !prices || dates.length === 0 || prices.length === 0 || !companyInfo)) {
                 console.error("API data missing for stock:", stock.symbol, { dates, prices, companyInfo });
                 throw new Error("API data missing");
@@ -193,6 +198,7 @@ export default {
                 industry: companyInfo?.industry || '',
                 website: companyInfo?.website || '',
                 news: newsItems,
+                technicalIndicators: technicalIndicators,
                 history: dates.map((date, index) => ({
                   date,
                   price: prices[index]

@@ -1,11 +1,13 @@
 <template>
-  <div class="mini-price-container" v-if="stockData">
+  <div class="mini-price-container" v-if="stockData" v-show="!isAnyModalActive">
     <div class="mini-price-label">Current Price:</div>
     <div class="mini-price-value">${{ currentPrice }}</div>
   </div>
 </template>
 
 <script>
+import { PopupState } from '@/utils/popupEventBus';
+
 export default {
   name: 'MiniPrice',
   props: {
@@ -15,6 +17,9 @@ export default {
     }
   },
   computed: {
+    isAnyModalActive() {
+      return PopupState.isAnyModalActive();
+    }, 
     currentPrice() {
       // Get the current price from the prices array
       if (this.stockData && this.stockData.prices && this.stockData.prices.length > 0) {

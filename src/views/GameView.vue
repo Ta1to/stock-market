@@ -232,6 +232,7 @@ export default {
         dates: stockDetails.history.map(entry => entry.date),
         prices: stockDetails.history.map(entry => entry.price),
         news: stockDetails.news || [], 
+        technicalIndicators: stockDetails.technicalIndicators || null
       };
     });
     

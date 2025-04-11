@@ -26,14 +26,12 @@
     backdrop-filter: blur(10px);
     position: relative;
     overflow: hidden;
-    transform-style: preserve-3d;
-    transform: rotateX(10deg) rotateY(-10deg);
     transition: all 0.5s ease;
     max-width: 100%;
   }
   
   .login-card:hover {
-    transform: rotateX(0) rotateY(0);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--accent-gold);
   }
   
   .login-logo {
@@ -151,9 +149,6 @@
   }
   
   @media (hover: none) {
-    .login-card {
-      transform: none !important;
-    }
   
     .login-button:hover {
       transform: none;

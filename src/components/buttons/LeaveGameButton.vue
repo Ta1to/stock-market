@@ -87,7 +87,7 @@ export default {
   top: 15px;
   right: 15px;
   padding: 8px 12px;
-  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  background: linear-gradient(135deg, #dc2626, #991b1b);
   color: white;
   border: none;
   border-radius: 8px;

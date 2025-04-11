@@ -1,36 +1,27 @@
 <template>
-    <div v-if="visible" class="modal-overlay">
-      <div class="modal">
+    <div v-if="visible">
+      <div class="blur-background"></div>
+      <div class="modal-overlay">
+        <div class="modal">
 
-        <div class="modal-header">
-          <h2 class="modal-title">The Current Stock Price</h2>
-          <div class="timer">{{ remainingTime }}s</div>
-        </div>
-        
-        <!-- Current Stock Price Display -->
-        <div class="current-price-container">
-          <h3 class="price-label">Current Price:</h3>
-          <div class="price-value">${{ currentPrice }}</div>
-        </div>
-  
-        <div class="price-info-container" v-if="stockData?.news && stockData.news.length > 0">
-          <div v-for="(item, index) in stockData.news" :key="index" class="price-info-item">
-            <div class="price-info-header">
-              <h3 class="info-title">{{ item.title }}</h3>
-            </div>
-            <p class="info-summary">{{ item.summary }}</p>
+          <div class="modal-header">
+            <h2 class="modal-title">The Current Stock Price</h2>
+            <div class="timer">{{ remainingTime }}s</div>
           </div>
+          
+          <!-- Current Stock Price Display -->
+          <div class="current-price-container">
+            <h3 class="price-label">Current Price:</h3>
+            <div class="price-value">${{ currentPrice }}</div>
+          </div>          
         </div>
-        <div class="modal-footer">
-          <button @click="closePrice">Close</button>
-        </div>
-        
       </div>
     </div>
   </template>
   
   <script>
   import { useTimer } from '@/utils/timerUtils';
+  import { PopupState } from '@/utils/popupEventBus';
 
   export default {
     name: 'CurrentPriceHint',
@@ -47,7 +38,7 @@
     },
     data() {
       return {
-        remainingTime: 20,
+        remainingTime: 10, 
         timer: null
       };
     },
@@ -55,15 +46,14 @@
         visible(newValue) {
           if (newValue) {
             this.initTimer();
+            PopupState.activateModalPopup('currentPrice');
           } else if (this.timer) {
             this.timer.stop();
+            PopupState.deactivateModalPopup('currentPrice');
           }
         }
     },
     computed: {
-        hasNews() {
-            return this.stockData?.news && this.stockData.news.length > 0;
-        },
         currentPrice() {
             // Get the current price from the prices array
             if (this.stockData && this.stockData.prices && this.stockData.prices.length > 0) {
@@ -74,41 +64,43 @@
     },
     methods: {
         initTimer() {
-          const duration = this.hasNews ? 20 : 3;
-          this.remainingTime = duration;
+          this.remainingTime = 10; 
           
           this.timer = useTimer(
-            duration,
+            10,
             (time) => { this.remainingTime = time; },
-            () => { this.$emit('close'); }
+            () => { 
+              this.$emit('close'); 
+              PopupState.deactivateModalPopup('currentPrice');
+            }
           );
           this.timer.start();
         },
-        closePrice() {
-          this.$emit('close');
-        }
     }, 
     beforeUnmount() {
         if (this.timer) {
           this.timer.stop();
         }
+        PopupState.deactivateModalPopup('currentPrice');
     }
   };
   </script>
   
   <style scoped>
-  .timer-container {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1rem;
-}
   .modal-overlay {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.8);
     display: grid;
     place-items: center;
-    z-index: 1000;
+    z-index: 9999; 
+  }
+  
+  .blur-background {
+    position: fixed;
+    inset: 0;
+    backdrop-filter: blur(8px);
+    z-index: 9998;
   }
   
   .modal {
@@ -124,60 +116,36 @@
     color: white;
   }
   
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+  }
+  
   .modal-title {
     font-size: 1.5rem;
     font-weight: bold;
-    margin-bottom: 1.5rem;
+    margin: 0;
     color: #ffd700;
   }
   
-  .price-info-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-  }
-  
-  .price-info-item {
-    background: rgba(255, 255, 255, 0.05);
-    padding: 1.5rem;
-    border-radius: 8px;
-    text-align: left;
-  }
-  
-  .price-info-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1rem;
-  }
-  
-  .info-title {
-    font-size: 1.1rem;
-    color: #e0e0e0;
-    margin: 0;
-    flex: 1;
-  }
-  
-  .info-summary {
-    line-height: 1.6;
-    color: #d1d5db;
-    font-size: 0.95rem;
-  }
-  
-  .no-info {
-    background: rgba(255, 255, 255, 0.05);
-    padding: 2rem;
-    border-radius: 8px;
-    margin-bottom: 2rem;
+  .timer {
+    background: rgba(255, 215, 0, 0.2);
+    color: #ffd700;
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    font-weight: bold;
   }
   
   .current-price-container {
     background: rgba(21, 128, 61, 0.2);
     border: 2px solid rgba(21, 128, 61, 0.5);
     border-radius: 8px;
-    padding: 1.2rem;
-    margin-bottom: 1.5rem;
+    padding: 1.8rem;
+    margin: 2rem 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -185,15 +153,37 @@
   }
   
   .price-label {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: #e0e0e0;
-    margin: 0 0 0.5rem 0;
+    margin: 0 0 0.8rem 0;
   }
   
   .price-value {
-    font-size: 2.5rem;
+    font-size: 3rem;
     font-weight: bold;
     color: #4ade80;
+  }
+  
+  .modal-footer {
+    margin-top: 1rem;
+  }
+  
+  .modal-footer button {
+    background: #ffd700;
+    color: #000;
+    border: none;
+    padding: 10px 24px;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .modal-footer button:hover {
+    background: #ffed4a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
   }
   
   @media (max-width: 768px) {
@@ -201,14 +191,8 @@
       padding: 1.5rem;
     }
     
-    .price-info-header {
-      flex-direction: column;
-    }
-    
-    .sentiment-badge {
-      margin-left: 0;
-      margin-top: 0.5rem;
-      align-self: flex-start;
+    .price-value {
+      font-size: 2.5rem;
     }
   }
   </style>

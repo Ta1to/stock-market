@@ -1,5 +1,5 @@
 <template>
-    <div class="mini-news-container" :class="{ expanded: isExpanded }">
+    <div class="mini-news-container" :class="{ expanded: isExpanded }" v-show="!isAnyModalActive">
       <div class="mini-news-header" @click="toggleExpand">
         <span>{{ isExpanded ? 'Latest News ▼' : 'Latest News ▶' }}</span>
       </div>
@@ -38,10 +38,13 @@
       },
       hasNews() {
         return this.stockData?.news && this.stockData.news.length > 0;
+      },
+      isAnyModalActive() {
+        return PopupState.isAnyModalActive();
       }
     },
     methods: {
-    toggleExpand() {
+      toggleExpand() {
         if (this.isExpanded) {
           PopupState.deactivatePopup(this.popupId);
         } else {

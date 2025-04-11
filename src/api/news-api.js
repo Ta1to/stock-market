@@ -22,7 +22,7 @@ export const getStockNews = async (symbol, limit = 3) => {
       language: 'en',
       filter_entities: true,
       must_have_entities: true, 
-      limit: Math.min(20, limit * 3), 
+      limit: Math.min(50, limit * 10), // Get more news to filter from (10x limit)
       api_token: MARKETAUX_API.KEY
     };
     
@@ -46,25 +46,80 @@ export const getStockNews = async (symbol, limit = 3) => {
     let newsItems = response.data.data || [];
     console.log(`Received ${newsItems.length} news items for ${formattedSymbol}`);
     
-    newsItems = newsItems.filter(item => 
-      item.description && item.description.length > 35
-    );
+    // enhanced quality filtering
+    newsItems = newsItems.filter(item => {
+      // filter out too short descriptions
+      if (!item.description || item.description.length < 35) {
+        return false;
+      }
+      
+      // filter out news that don't mention the stock symbol
+      if (!item.description.includes(formattedSymbol)) {
+        return false;
+      }
+      
+      // filter out descriptions that don't end with a period
+      const trimmedDesc = item.description.trim();
+      if (!trimmedDesc.endsWith('.') && !trimmedDesc.endsWith('!') && !trimmedDesc.endsWith('?')) {
+        return false;
+      }
+      
+      // filter out descriptions that seem to be cut off (end with "..." or similar)
+      if (trimmedDesc.endsWith('...') || trimmedDesc.endsWith('…')) {
+        return false;
+      }
+      
+      // filter out common junk phrases
+      const junkPhrases = [
+        "click here",
+        "read more",
+        "subscribe to",
+        "sign up for",
+        "please see", 
+        "can be downloaded here", 
+        "download"
+      ];
+      
+      if (junkPhrases.some(phrase => item.description.toLowerCase().includes(phrase))) {
+        return false;
+      }
+      
+      return true;
+    });
     
     if (newsItems.length === 0) {
-      console.log(`No quality news found for ${formattedSymbol}, using fallback.`);
+      console.log(`No quality news found for ${formattedSymbol}, trying less strict filtering.`);
+      // fall back to less strict filtering, but still require a period at the end
+      newsItems = response.data.data?.filter(item => {
+        if (!item.description || item.description.length < 60) return false;
+        const trimmedDesc = item.description.trim();
+        return trimmedDesc.endsWith('.') || trimmedDesc.endsWith('!') || trimmedDesc.endsWith('?');
+      }) || [];
     }
     
     const processedNews = newsItems
       .slice(0, limit)
-      .map(item => ({
-        title: '',
-        summary: item.description || ''
-      }));
+      .map(item => {
+        let summary = item.description || item.summary || '';
+        
+        if (summary.endsWith('...') || summary.endsWith('…')) {
+          summary = summary.slice(0, -3) + '.';
+        }
+        
+        return {
+          title: item.title || '',
+          summary: summary,
+          source: item.source || '',
+          url: item.url || ''
+        };
+      });
 
+    console.log(`Returning ${processedNews.length} quality news for ${formattedSymbol}`);
     return processedNews;
 
   } catch (error) {
     logError(error, 'NewsAPI:getStockNews');
     console.error('Error fetching news:', error.message);
+    return [];
   }
 };

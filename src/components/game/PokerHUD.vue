@@ -290,7 +290,7 @@ export default {
 }
 
 .fold-button {
-  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  background: linear-gradient(135deg, #dc2626, #991b1b);
   color: white;
 }
 

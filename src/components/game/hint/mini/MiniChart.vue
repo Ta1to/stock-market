@@ -1,5 +1,5 @@
 <template>
-    <div class="mini-chart-container" :class="{ expanded: isExpanded }">
+    <div class="mini-chart-container" :class="{ expanded: isExpanded }" v-show="!isAnyModalActive">
       <div class="mini-chart-header" @click="toggleExpand">
         <span>{{ isExpanded ? 'Stock Chart ▼' : 'Stock Chart ▶' }}</span>
       </div>
@@ -32,6 +32,9 @@
       isExpanded() {
         return PopupState.isActivePopup(this.popupId);
       },
+      isAnyModalActive() {
+      return PopupState.isAnyModalActive();
+      }, 
       limitedStockData() {
         return getLimitedStockData(this.stockData, 3);
       }

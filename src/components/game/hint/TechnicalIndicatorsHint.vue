@@ -1,72 +1,59 @@
 <template>
-  <div class="modal-overlay" v-if="visible">
-    <div class="indicators-popup">
-      <div class="indicators-header">
-        <h2>Technical Indicators - {{ stockData.name }} ({{ stockData.symbol }})</h2>
-        <div class="countdown" v-if="countdown > 0">{{ countdown }}s</div>
-      </div>
-
-      <div class="indicators-content">
-        <div class="indicators-grid">
-          <!-- RSI Indicator -->
-          <div class="indicator-card">
-            <h3>RSI (Relative Strength Index)</h3>
-            <div class="indicator-value" :class="getRsiClass(indicators.rsi)">
-              {{ indicators.rsi.toFixed(2) }}
-            </div>
-            <div class="indicator-description">
-              <p>Measures the speed and change of price movements. Values above 70 indicate overbought conditions, while values below 30 indicate oversold conditions.</p>
-            </div>
-            <div class="indicator-scale">
-              <div class="scale-marker oversold">30</div>
-              <div class="scale-bar">
-                <div class="scale-fill" :style="{ width: getRsiWidth() + '%' }"></div>
-              </div>
-              <div class="scale-marker overbought">70</div>
-            </div>
-          </div>
-
-          <!-- MACD Indicator -->
-          <div class="indicator-card">
-            <h3>MACD (Moving Average Convergence Divergence)</h3>
-            <div class="indicator-value" :class="getMacdClass()">
-              {{ indicators.macd.value.toFixed(2) }}
-            </div>
-            <div class="indicator-secondary">
-              Signal: {{ indicators.macd.signal.toFixed(2) }} | 
-              Histogram: {{ indicators.macd.histogram.toFixed(2) }}
-            </div>
-            <div class="indicator-description">
-              <p>Trend-following momentum indicator that shows the relationship between two moving averages of a stock's price.</p>
-            </div>
-          </div>
-
-          <!-- SMA Indicator -->
-          <div class="indicator-card">
-            <h3>SMA (Simple Moving Average)</h3>
-            <div class="indicator-value">
-              {{ indicators.sma.toFixed(2) }}
-            </div>
-            <div class="indicator-description">
-              <p>The average price over a specific time period. Helps to identify trend direction and potential support/resistance levels.</p>
-            </div>
-          </div>
-
-          <!-- Volume Indicator -->
-          <div class="indicator-card">
-            <h3>Trading Volume</h3>
-            <div class="indicator-value">
-              {{ formatVolume(indicators.volume) }}
-            </div>
-            <div class="indicator-description">
-              <p>The number of shares traded during a given time period. High volume often indicates strong interest in a stock.</p>
-            </div>
-          </div>
+  <div v-if="visible">
+    <div class="blur-background"></div>
+    <div class="modal-overlay">
+      <div class="indicators-popup">
+        <div class="indicators-header">
+          <h2>Technical Indicators - {{ stockData.name }} ({{ stockData.symbol }})</h2>
+          <div class="countdown" v-if="countdown > 0">{{ countdown }}s</div>
         </div>
 
-        <div class="indicator-analysis">
-          <h3>Market Analysis</h3>
-          <p>{{ generatedAnalysis }}</p>
+        <div class="indicators-content">
+          <div v-if="indicators && indicators.rsi !== null && indicators.macd !== null" class="indicators-grid">
+            <!-- RSI Indicator -->
+            <div class="indicator-card">
+              <h3>RSI (Relative Strength Index)</h3>
+              <div class="indicator-value" :class="getRsiClass(indicators.rsi)">
+                {{ indicators.rsi.toFixed(2) }}
+              </div>
+              <div class="indicator-description">
+                <p>Measures the speed and change of price movements. Values above 70 indicate overbought conditions, while values below 30 indicate oversold conditions.</p>
+              </div>
+              <div class="indicator-scale">
+                <div class="scale-marker oversold">30</div>
+                <div class="scale-bar">
+                  <div class="scale-fill" :style="{ width: getRsiWidth() + '%' }"></div>
+                </div>
+                <div class="scale-marker overbought">70</div>
+              </div>
+            </div>
+
+            <!-- MACD Indicator -->
+            <div class="indicator-card">
+              <h3>MACD (Moving Average Convergence Divergence)</h3>
+              <div class="indicator-value" :class="getMacdClass()">
+                {{ indicators.macd.value.toFixed(2) }}
+              </div>
+              <div class="indicator-secondary">
+                Signal: {{ indicators.macd.signal.toFixed(2) }} | 
+                Histogram: {{ indicators.macd.histogram.toFixed(2) }}
+              </div>
+              <div class="indicator-description">
+                <p>Trend-following momentum indicator that shows the relationship between two moving averages of a stock's price.</p>
+              </div>
+            </div>
+            
+            <div class="indicator-analysis">
+              <h3>Market Analysis</h3>
+              <p>{{ generatedAnalysis }}</p>
+            </div>
+          </div>
+          
+          <div v-else class="loading-error">
+            <h3>Loading Indicators...</h3>
+            <p>Technical indicators could not be loaded at this time. This could be due to API limitations or connectivity issues.</p>
+            <p>Try again later or check another stock.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -74,8 +61,8 @@
 </template>
 
 <script>
-import { calculateAllIndicators } from '@/utils/indicator';
 import { useTimer } from '@/utils/timerUtils';
+import { PopupState } from '@/utils/popupEventBus';
 
 export default {
   name: 'TechnicalIndicatorsHint',
@@ -104,10 +91,9 @@ export default {
     generatedAnalysis() {
       if (!this.indicators) return '';
       
-      const rsi = this.indicators.rsi;
-      const macd = this.indicators.macd.value;
-      const signal = this.indicators.macd.signal;
-      const sma = this.indicators.sma;
+      const rsi = this.indicators.rsi || 50;
+      const macd = this.indicators.macd.value || 0;
+      const signal = this.indicators.macd.signal || 0;
       
       let analysis = '';
       
@@ -127,22 +113,11 @@ export default {
         analysis += `The MACD (${macd.toFixed(2)}) is below the signal line (${signal.toFixed(2)}), indicating bearish momentum. `;
       }
       
-      // add SMA comparison to current price
-      const currentPrice = typeof this.stockData.prices[0] === 'string' ? 
-        parseFloat(this.stockData.prices[0]) : 
-        this.stockData.prices[0];
-        
-      if (currentPrice > sma) {
-        analysis += `The current price (${currentPrice.toFixed(2)}) is trading above the SMA (${sma.toFixed(2)}), which can be a bullish sign. `;
-      } else {
-        analysis += `The current price (${currentPrice.toFixed(2)}) is trading below the SMA (${sma.toFixed(2)}), which can be a bearish sign. `;
-      }
-      
       // conclusion based on indicators
-      if ((rsi > 50 && macd > signal) || (rsi < 70 && rsi > 60 && macd > signal)) {
-        analysis += `Overall, technical indicators suggest a positive short-term outlook for ${this.stockData.symbol}.`;
-      } else if ((rsi < 50 && macd < signal) || (rsi > 30 && rsi < 40 && macd < signal)) {
-        analysis += `Overall, technical indicators suggest a negative short-term outlook for ${this.stockData.symbol}.`;
+      if ((rsi < 70 && rsi > 50 && macd > signal) || (rsi < 30)) {
+        analysis += `Overall, technical indicators suggest a potential buying opportunity for ${this.stockData.symbol}.`;
+      } else if ((rsi > 30 && rsi < 50 && macd < signal) || (rsi > 70)) {
+        analysis += `Overall, technical indicators suggest it might be better to avoid buying ${this.stockData.symbol} right now.`;
       } else {
         analysis += `Overall, technical indicators show mixed signals for ${this.stockData.symbol}, suggesting caution.`;
       }
@@ -154,15 +129,11 @@ export default {
     visible(newValue) {
       if (newValue) {
         this.initTimer();
-        this.calculateIndicators();
+        PopupState.activateModalPopup('technicalIndicators');
+        this.loadIndicators();
       } else if (this.timer) {
         this.timer.stop();
-      }
-    },
-    stockData: {
-      deep: true,
-      handler() {
-        this.calculateIndicators();
+        PopupState.deactivateModalPopup('technicalIndicators');
       }
     }
   },
@@ -172,19 +143,12 @@ export default {
       this.timer = useTimer(
         15, 
         (time) => { this.countdown = time; }, 
-        () => { this.$emit('close'); }
+        () => { 
+          this.$emit('close'); 
+          PopupState.deactivateModalPopup('technicalIndicators');
+        }
       );
       this.timer.start();
-    },
-    formatVolume(volume) {
-      if (!volume) return '0';
-      if (volume >= 1000000) {
-        return (volume / 1000000).toFixed(2) + 'M';
-      }
-      if (volume >= 1000) {
-        return (volume / 1000).toFixed(0) + 'K';
-      }
-      return volume.toString();
     },
     getRsiClass(rsi) {
       if (rsi > 70) return 'overbought';
@@ -193,7 +157,19 @@ export default {
     },
     getMacdClass() {
       if (!this.indicators) return '';
-      if (this.indicators.macd.value > this.indicators.macd.signal) return 'bullish';
+      const macdValue = this.indicators.macd.value;
+      const signalValue = this.indicators.macd.signal;
+      
+      // Strong bullish: Positive MACD and above signal line
+      if (macdValue > 0 && macdValue > signalValue) return 'bullish';
+      
+      // Weak bullish: Negative MACD but crossing above signal line (momentum changing)
+      if (macdValue <= 0 && macdValue > signalValue) return 'weak-bullish';
+      
+      // Weak bearish: Positive MACD but crossing below signal line (momentum weakening)
+      if (macdValue > 0 && macdValue <= signalValue) return 'weak-bearish';
+      
+      // Strong bearish: Negative MACD and below signal line
       return 'bearish';
     },
     getRsiWidth() {
@@ -201,24 +177,27 @@ export default {
       if (!this.indicators) return 50;
       return Math.min(100, Math.max(0, this.indicators.rsi));
     },
-    calculateIndicators() {
-      try {
-        console.log("Calculating indicators from actual stock data:", this.stockData);
-        this.indicators = calculateAllIndicators(this.stockData);
-        console.log("Calculated indicators:", this.indicators);
-      } catch (error) {
-        console.error('Error calculating indicators:', error);
+    loadIndicators() {
+      // Simply use the fetched indicators data
+      if (this.stockData?.technicalIndicators) {
+        this.indicators = {
+          rsi: this.stockData.technicalIndicators.rsi,
+          macd: this.stockData.technicalIndicators.macd
+        };
+      } else {
+        console.warn("No prefetched indicators available for", this.stockData?.symbol);
       }
-    },
+    }
   },
   mounted() {
     if (this.visible) {
-      this.calculateIndicators();
+      this.loadIndicators();
     }
   },
   beforeUnmount() {
     if (this.timer) {
       this.timer.stop();
+      PopupState.deactivateModalPopup('technicalIndicators');
     }
   }
 };
@@ -231,190 +210,192 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.85);
+  background-color: rgba(0, 0, 0, 0.75);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
-  padding: 20px;
+  z-index: 9999;
+}
+
+.blur-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  z-index: 9998;
 }
 
 .indicators-popup {
-  background: #131722;
   width: 90%;
-  max-width: 1000px;
-  max-height: 90vh;
+  max-width: 800px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: rgba(17, 24, 39, 0.98);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  padding: 0;
+  animation: fadeIn 0.3s ease-out;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  border: 1px solid rgba(255, 215, 0, 0.2);
-  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .indicators-header {
-  padding: 20px;
   background: rgba(0, 0, 0, 0.3);
-  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
-  color: #ffd700;
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.3);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-radius: 12px 12px 0 0;
 }
 
 .indicators-header h2 {
   margin: 0;
+  color: #ffd700;
   font-size: 1.5rem;
 }
 
 .countdown {
   background: rgba(255, 215, 0, 0.2);
   color: #ffd700;
-  padding: 5px 10px;
-  border-radius: 20px;
+  padding: 4px 10px;
+  border-radius: 12px;
   font-weight: bold;
   min-width: 50px;
   text-align: center;
 }
 
 .indicators-content {
-  flex-grow: 1;
-  overflow-y: auto;
-  padding: 20px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .indicators-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-areas: 
+    "rsi macd"
+    "analysis analysis";
+  gap: 24px;
+}
+.indicators-grid > div:nth-child(1) {
+  grid-area: rsi;
+}
+
+.indicators-grid > div:nth-child(2) {
+  grid-area: macd;
+}
+
+.indicators-grid > div:nth-child(3) {
+  grid-area: analysis;
 }
 
 .indicator-card {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
+  background: rgba(30, 41, 59, 0.8);
+  border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+}
+
+.indicator-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 215, 0, 0.3);
 }
 
 .indicator-card h3 {
-  color: #e0e0e0;
-  margin: 0 0 10px 0;
-  font-size: 1.1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 10px;
+  margin: 0;
+  color: #e2e8f0;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
 }
 
 .indicator-value {
   font-size: 2rem;
   font-weight: bold;
-  margin: 10px 0;
 }
 
 .indicator-secondary {
-  font-size: 0.9rem;
-  color: #a0a0a0;
-  margin-top: -5px;
+  font-size: 0.95rem;
+  color: #cbd5e1;
+  margin-top: -8px;
 }
 
 .indicator-description {
-  color: #a0a0a0;
-  font-size: 0.9rem;
-  margin-top: auto;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 8px 0;
+}
+
+.indicator-analysis {
+  background: rgba(30, 41, 59, 0.8);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.indicator-analysis h3 {
+  color: #e2e8f0;
+  margin-top: 0;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.indicator-analysis p {
+  color: #cbd5e1;
+  line-height: 1.6;
+  font-size: 1rem;
 }
 
 .indicator-scale {
   display: flex;
   align-items: center;
-  margin-top: 10px;
+  gap: 8px;
+  margin-top: 8px;
 }
-
 .scale-bar {
   flex-grow: 1;
-  height: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
   overflow: hidden;
-  margin: 0 10px;
+  position: relative;
 }
 
 .scale-fill {
+  position: absolute;
   height: 100%;
   background: linear-gradient(90deg, #10b981, #ffd700, #ef4444);
-  border-radius: 5px;
+  border-radius: 4px;
+  transition: width 0.5s ease;
 }
 
 .scale-marker {
   font-size: 0.8rem;
-  color: #e0e0e0;
-}
-
-.scale-marker.oversold {
-  color: #10b981;
-}
-
-.scale-marker.overbought {
-  color: #ef4444;
-}
-
-.indicator-analysis {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 10px;
-  padding: 20px;
-  margin-top: 20px;
-}
-
-.indicator-analysis h3 {
-  color: #ffd700;
-  margin: 0 0 15px 0;
-}
-
-.indicator-analysis p {
-  color: #e0e0e0;
-  line-height: 1.6;
-}
-
-.close-button {
-  background: #ffd700;
-  color: #000;
-  border: none;
-  padding: 12px 30px;
-  border-radius: 30px;
-  font-weight: bold;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.close-button:hover:not(:disabled) {
-  background: #ffed4a;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
-}
-
-.close-button:disabled {
-  background: #5a5a5a;
-  color: #888;
-  cursor: not-allowed;
-}
-
-.overbought {
-  color: #ef4444;
+  color: #cbd5e1;
 }
 
 .oversold {
   color: #10b981;
 }
 
-.bullish {
-  color: #10b981;
-}
-
-.bearish {
+.overbought {
   color: #ef4444;
 }
 
@@ -422,29 +403,81 @@ export default {
   color: #ffd700;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.bullish {
+  color: #10b981; 
 }
 
+.weak-bullish {
+  color: #7acea3; 
+}
+
+.bearish {
+  color: #ef4444; 
+}
+.weak-bearish {
+  color: #f1a3a3; 
+}
+
+.loading-error {
+  background: rgba(30, 41, 59, 0.8);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  text-align: center;
+  margin: 20px 0;
+}
+
+.loading-error h3 {
+  color: #ffd700;
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.loading-error p {
+  color: #cbd5e1;
+  line-height: 1.6;
+  font-size: 1rem;
+  margin: 8px 0;
+}
+
+.close-button {
+  margin: 0;
+  align-self: center;
+  margin-bottom: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  color: #ffd700;
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: rgba(255, 215, 0, 0.2);
+  transform: translateY(-2px);
+}
 @media (max-width: 768px) {
-  .indicators-grid {
-    grid-template-columns: 1fr;
-  }
-  
   .indicators-popup {
     width: 95%;
-    max-height: 95vh;
+    max-width: none;
+  }
+  
+  .indicators-header h2 {
+    font-size: 1.2rem;
+  }
+  
+  .indicators-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas: 
+      "rsi"
+      "macd"
+      "analysis";
   }
   
   .indicator-value {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
   }
 }
 </style>
