@@ -198,4 +198,15 @@ describe('LoginView.vue', () => {
     expect(require('firebase/auth').signInWithEmailAndPassword).not.toHaveBeenCalled()
     expect(mockRouter.push).not.toHaveBeenCalled()
   })
+  
+  it('triggers email validation when email changes', async () => {
+    // Setup validator spy
+    const validateEmailSpy = jest.spyOn(wrapper.vm, 'validateEmail')
+    
+    // Set a valid email directly
+    await wrapper.setData({ email: 'test@example.com' })
+    
+    // Check if validateEmail was called by the watcher
+    expect(validateEmailSpy).toHaveBeenCalled()
+  })
 })

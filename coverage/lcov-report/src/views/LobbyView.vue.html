@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">95% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/22</span>
+                <span class='fraction'>19/20</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">93.75% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/36</span>
+                <span class='fraction'>30/32</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">80% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>4/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">95% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/22</span>
+                <span class='fraction'>19/20</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -359,14 +359,30 @@
 <a name='L294'></a><a href='#L294'>294</a>
 <a name='L295'></a><a href='#L295'>295</a>
 <a name='L296'></a><a href='#L296'>296</a>
-<a name='L297'></a><a href='#L297'>297</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L297'></a><a href='#L297'>297</a>
+<a name='L298'></a><a href='#L298'>298</a>
+<a name='L299'></a><a href='#L299'>299</a>
+<a name='L300'></a><a href='#L300'>300</a>
+<a name='L301'></a><a href='#L301'>301</a>
+<a name='L302'></a><a href='#L302'>302</a>
+<a name='L303'></a><a href='#L303'>303</a>
+<a name='L304'></a><a href='#L304'>304</a>
+<a name='L305'></a><a href='#L305'>305</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -658,21 +674,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">&lt;template&gt;
   &lt;div class="lobby-wrapper"&gt;
     &lt;div class="lobby-container"&gt;
-      &lt;h1 class="lobby-title"<span class="cstat-no" title="statement not covered" >&gt;Lobby&lt;/h1&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;div class="lobby-header"&gt;</span>
+      &lt;h1 class="lobby-title"&gt;Lobby&lt;/h1&gt;
+      &lt;div class="lobby-header"&gt;
         &lt;div class="join-code"&gt;
           Join Code: {{ joinCode }}
-<span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
+        &lt;/div&gt;
         &lt;div v-if="isCreator" class="visibility-toggle"&gt;
           &lt;span :class="{ 'active': !isPublic }"&gt;Privat&lt;/span&gt;
-          &lt;label class="switch"&gt;
-            &lt;input 
-              type="checkbox" 
-              v-model="isPublic"
-              @change="updateGameVisibility"
-            &gt;
-            &lt;span class="slider"&gt;&lt;/span&gt;
-          &lt;/label&gt;
+          &lt;!-- Replace checkbox with div-based toggle similar to HomeView.vue --&gt;
+          &lt;div class="toggle-switch" @click="toggleVisibility"&gt;
+            &lt;div class="toggle-slider" :class="{'right': !isPublic}"&gt;&lt;/div&gt;
+          &lt;/div&gt;
           &lt;span :class="{ 'active': isPublic }"&gt;Öffentlich&lt;/span&gt;
         &lt;/div&gt;
       &lt;/div&gt;
@@ -712,6 +724,7 @@ import { ref, onValue} from "firebase/database";
 import { db } from "../api/firebase-api";
 import { getStockInfo } from '@/api/description-api';
 import { getStockNews } from '@/api/news-api';
+import { fetchTechnicalIndicators } from '@/api/indicator-api';
 &nbsp;
 export default {
   name: 'LobbyView',
@@ -731,6 +744,12 @@ export default {
     };
   },
   methods: {
+    // New method for the toggle-switch
+    toggleVisibility() {
+      this.isPublic = !this.isPublic;
+      this.updateGameVisibility();
+    },
+&nbsp;
     async updateGameVisibility() {
       if (!this.isCreator) return;
       
@@ -837,6 +856,10 @@ export default {
               const newsItems = await getStockNews(stock.symbol, 2); 
               console.log('Received news for', stock.symbol, ':', newsItems.length, 'items');
 &nbsp;
+              // Get technical indicators
+              const technicalIndicators = await fetchTechnicalIndicators(stock.symbol);
+              console.log('Received technical indicators for', stock.symbol, ':', technicalIndicators);
+&nbsp;
               if (validateStockAPI &amp;&amp; (!dates || !prices || dates.length === 0 || prices.length === 0 || !companyInfo)) {
                 console.error("API data missing for stock:", stock.symbol, { dates, prices, companyInfo });
                 throw new Error("API data missing");
@@ -850,6 +873,7 @@ export default {
                 industry: companyInfo?.industry || '',
                 website: companyInfo?.website || '',
                 news: newsItems,
+                technicalIndicators: technicalIndicators,
                 history: dates.map((date, index) =&gt; ({
                   date,
                   price: prices[index]
@@ -958,7 +982,7 @@ export default {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-04-11T19:20:16.645Z
+                at 2025-04-13T10:35:32.156Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

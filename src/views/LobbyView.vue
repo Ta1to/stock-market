@@ -8,14 +8,10 @@
         </div>
         <div v-if="isCreator" class="visibility-toggle">
           <span :class="{ 'active': !isPublic }">Privat</span>
-          <label class="switch">
-            <input 
-              type="checkbox" 
-              v-model="isPublic"
-              @change="updateGameVisibility"
-            >
-            <span class="slider"></span>
-          </label>
+          <!-- Replace checkbox with div-based toggle similar to HomeView.vue -->
+          <div class="toggle-switch" @click="toggleVisibility">
+            <div class="toggle-slider" :class="{'right': !isPublic}"></div>
+          </div>
           <span :class="{ 'active': isPublic }">Öffentlich</span>
         </div>
       </div>
@@ -75,6 +71,12 @@ export default {
     };
   },
   methods: {
+    // New method for the toggle-switch
+    toggleVisibility() {
+      this.isPublic = !this.isPublic;
+      this.updateGameVisibility();
+    },
+
     async updateGameVisibility() {
       if (!this.isCreator) return;
       

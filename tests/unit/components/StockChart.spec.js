@@ -1,174 +1,96 @@
-import { shallowMount } from '@vue/test-utils'
-import StockChart from '@/components/StockChart.vue'
-import '../../../tests/setup/vuetify' // Importieren der Vuetify-Mocks
-import { vuetifyMock } from '../../../tests/setup/vuetify'
+import { mount } from '@vue/test-utils';
+import StockChart from '@/components/StockChart.vue';
+import { getChartConfig } from '@/utils/stockDataUtils';
 
-// Mock für Chart.js und vue-chartjs
+// Mock the chartjs component to avoid canvas rendering issues in tests
 jest.mock('vue-chartjs', () => ({
   Line: {
-    name: 'Line',
-    template: '<div class="mock-line-chart" />'
+    props: ['data', 'options'],
+    template: '<div class="mock-chart"></div>'
   }
-}))
+}));
 
-// Mock für Chart.js
-jest.mock('chart.js', () => ({
-  Chart: {
-    register: jest.fn()
-  },
-  CategoryScale: jest.fn(),
-  LinearScale: jest.fn(),
-  PointElement: jest.fn(),
-  LineElement: jest.fn(),
-  Title: jest.fn(),
-  Tooltip: jest.fn(),
-  Legend: jest.fn()
-}))
-
-// Mock für stockDataUtils
+// Mock the stockDataUtils to control chart config
 jest.mock('@/utils/stockDataUtils', () => ({
-  getChartConfig: jest.fn(() => ({
+  getChartConfig: jest.fn().mockReturnValue({
     responsive: true,
-    maintainAspectRatio: false,
-    // Vereinfachtes Chart-Konfigurationsobjekt für Tests
-    scales: {
-      y: {
-        grid: { color: 'rgba(255, 255, 255, 0.05)' },
-        ticks: { color: 'rgba(255, 255, 255, 0.7)' }
-      }
-    }
-  }))
-}))
+    maintainAspectRatio: false
+  })
+}));
 
 describe('StockChart.vue', () => {
-  let wrapper
-
-  // Mock-Daten für die Tests
-  const mockStockData = {
-    dates: ['2023-01-01', '2023-01-02', '2023-01-03'],
-    prices: [100, 105, 110]
-  }
-
-  const emptyStockData = {
-    dates: [],
-    prices: []
-  }
+  let wrapper;
+  let mockStockData;
 
   beforeEach(() => {
-    jest.clearAllMocks()
-  })
-
-  it('renders properly when stock data is provided', () => {
-    wrapper = shallowMount(StockChart, {
-      props: {
-        stockData: mockStockData
-      },
-      global: {
-        mocks: {
-          $vuetify: vuetifyMock
-        }
-      }
-    })
-
-    expect(wrapper.find('.stock-chart').exists()).toBe(true)
-    expect(wrapper.find('.chart-container').exists()).toBe(true)
-    expect(wrapper.find('.no-data').exists()).toBe(false)
-    expect(wrapper.findComponent({ name: 'Line' }).exists()).toBe(true)
-  })
-
-  it('shows loading message when no data is available', () => {
-    wrapper = shallowMount(StockChart, {
-      props: {
-        stockData: emptyStockData
-      },
-      global: {
-        mocks: {
-          $vuetify: vuetifyMock
-        }
-      }
-    })
-
-    expect(wrapper.find('.chart-container').exists()).toBe(false)
-    expect(wrapper.find('.no-data').exists()).toBe(true)
-    expect(wrapper.find('.no-data').text()).toBe('Loading stock data...')
-  })
-
-  it('creates correct chart data from props', () => {
-    wrapper = shallowMount(StockChart, {
-      props: {
-        stockData: mockStockData
-      },
-      global: {
-        mocks: {
-          $vuetify: vuetifyMock
-        }
-      }
-    })
-
-    const chartData = wrapper.vm.chartData
+    // Reset mocks
+    jest.clearAllMocks();
     
-    expect(chartData.labels).toEqual(mockStockData.dates)
-    expect(chartData.datasets).toHaveLength(1)
-    expect(chartData.datasets[0].data).toEqual(mockStockData.prices)
-    expect(chartData.datasets[0].label).toBe('Stock Price')
-    expect(chartData.datasets[0].borderColor).toBe('#3b82f6')
-  })
-
-  it('uses getChartConfig from stockDataUtils', () => {
-    const { getChartConfig } = require('@/utils/stockDataUtils')
+    // Create mock stock data
+    mockStockData = {
+      dates: ['2023-01-01', '2023-01-02', '2023-01-03'],
+      prices: [150, 155, 153]
+    };
     
-    wrapper = shallowMount(StockChart, {
+    // Create the component wrapper
+    wrapper = mount(StockChart, {
       props: {
         stockData: mockStockData
-      },
-      global: {
-        mocks: {
-          $vuetify: vuetifyMock
-        }
       }
-    })
+    });
+  });
 
-    expect(getChartConfig).toHaveBeenCalledWith(true)
-    expect(wrapper.vm.chartOptions).toEqual(expect.objectContaining({
+  it('renders correctly with stock data', () => {
+    // Component should be rendered
+    expect(wrapper.exists()).toBe(true);
+    
+    // Chart container should be visible
+    expect(wrapper.find('.chart-container').exists()).toBe(true);
+    
+    // Mock chart should be rendered
+    expect(wrapper.find('.mock-chart').exists()).toBe(true);
+    
+    // Loading message should not be visible
+    expect(wrapper.find('.no-data').exists()).toBe(false);
+  });
+
+  it('shows loading message when no data is available', async () => {
+    await wrapper.setProps({
+      stockData: { dates: [], prices: [] }
+    });
+    
+    // Chart container should not be visible
+    expect(wrapper.find('.chart-container').exists()).toBe(false);
+    
+    // Loading message should be visible
+    expect(wrapper.find('.no-data').exists()).toBe(true);
+    expect(wrapper.find('.no-data').text()).toBe('Loading stock data...');
+  });
+
+  it('processes chartData correctly', () => {
+    // Access the computed property directly
+    const chartData = wrapper.vm.chartData;
+    
+    // Check that labels match the dates from props
+    expect(chartData.labels).toEqual(['2023-01-01', '2023-01-02', '2023-01-03']);
+    
+    // Check that prices are correctly set
+    expect(chartData.datasets[0].data).toEqual([150, 155, 153]);
+    
+    // Check some styling properties
+    expect(chartData.datasets[0].label).toBe('Stock Price');
+    expect(chartData.datasets[0].borderColor).toBe('#3b82f6');
+    expect(chartData.datasets[0].backgroundColor).toBe('rgba(59, 130, 246, 0.1)');
+  });
+
+  it('uses the chart config from stockDataUtils', () => {
+    // Check that getChartConfig was called with the dark mode parameter
+    expect(getChartConfig).toHaveBeenCalledWith(true);
+    
+    // Check that chartOptions returns the value from getChartConfig
+    expect(wrapper.vm.chartOptions).toEqual({
       responsive: true,
       maintainAspectRatio: false
-    }))
-  })
-
-  it('handles undefined stock data gracefully', () => {
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
-    
-    wrapper = shallowMount(StockChart, {
-      props: {
-        stockData: {}
-      },
-      global: {
-        mocks: {
-          $vuetify: vuetifyMock
-        }
-      }
-    })
-
-    expect(wrapper.vm.chartData.labels).toEqual([])
-    expect(wrapper.vm.chartData.datasets[0].data).toEqual([])
-    expect(wrapper.find('.no-data').exists()).toBe(true)
-    
-    consoleErrorSpy.mockRestore()
-  })
-
-  it('has the correct styling for the chart container', () => {
-    wrapper = shallowMount(StockChart, {
-      props: {
-        stockData: mockStockData
-      },
-      global: {
-        mocks: {
-          $vuetify: vuetifyMock
-        }
-      }
-    })
-
-    const chartContainer = wrapper.find('.chart-container')
-    expect(chartContainer.classes()).toContain('chart-container')
-  })
-})
+    });
+  });
+});

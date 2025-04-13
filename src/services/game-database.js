@@ -83,17 +83,17 @@ export const subscribeToGameData = (gameId, callback) => {
 /**
  * Create or initialize a game node in the DB
  */
-export const createGame = async (gameId, initialData) => {
+export const createGame = async (gameId, initialData = {}) => {
   const path = `games/${gameId}`;
   const data = {
-    round: initialData.round || 1,
-    phase: initialData.phase || 1,
-    currentTurnIndex: initialData.currentTurnIndex || 0,
-    players: initialData.players || [],
+    round: initialData?.round || 1,
+    phase: initialData?.phase || 1,
+    currentTurnIndex: initialData?.currentTurnIndex || 0,
+    players: initialData?.players || [],
     predictions: {},
     bets: {},
     pot: 0,
-    ...initialData.extra || {}, // optional extra data
+    ...(initialData?.extra || {}), // optional extra data
   };
   await writeData(path, data);
 };
@@ -162,6 +162,7 @@ export const updatePot = async (gameId, roundNumber, newPotValue) => {
     console.log(`Pot updated to ${newPotValue} for game ${gameId}, round ${roundNumber}`);
   } catch (error) {
     console.error(`Error updating pot for game ${gameId}, round ${roundNumber}:`, error);
+    throw error; // Re-throw to propagate the error
   }
 };
 
@@ -185,6 +186,7 @@ export const updateCurrentTurnIndex = async (gameId, turnIndex) => {
     console.log(`Turn index updated to ${turnIndex} in game ${gameId}`);
   } catch (error) {
     console.error(`Error updating turn index in game ${gameId}:`, error);
+    throw error; // Re-throw to propagate the error
   }
 };
 

@@ -19,5 +19,9 @@ module.exports = {
     '!src/main.js',
     '!src/router/index.js',
     '!**/node_modules/**'
-  ]
+  ],
+  transformIgnorePatterns: [
+    '/node_modules/(?!(axios|firebase|@firebase)/)'
+  ],
+  setupFiles: ['<rootDir>/tests/setup/fetch-polyfill.js']
 }

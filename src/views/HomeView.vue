@@ -13,11 +13,11 @@
 
       <!-- Public/Private Toggle -->
       <div class="toggle-container">
-        <span :class="{'active': isGamePublic}" @click="isGamePublic = true">Public</span>
+        <span :class="{'active': isGamePublic}" @click="isGamePublic = true">Öffentlich</span>
         <div class="toggle-switch" @click="isGamePublic = !isGamePublic">
           <div class="toggle-slider" :class="{'right': !isGamePublic}"></div>
         </div>
-        <span :class="{'active': !isGamePublic}" @click="isGamePublic = false">Private</span>
+        <span :class="{'active': !isGamePublic}" @click="isGamePublic = false">Privat</span>
       </div>
 
       <!-- Public Games Section -->
@@ -119,6 +119,7 @@ export default {
           );
           if (!gameId) {
             console.error("No game found with the provided code!");
+            this.closeJoinGameModal();
             return;
           }
           game = games[gameId];
