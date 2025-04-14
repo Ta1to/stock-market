@@ -21,7 +21,6 @@ export default {
       return PopupState.isAnyModalActive();
     }, 
     currentPrice() {
-      // Get the current price from the prices array
       if (this.stockData && this.stockData.prices && this.stockData.prices.length > 0) {
         return this.stockData.prices[this.stockData.prices.length - 1].toFixed(2);
       }

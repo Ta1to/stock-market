@@ -11,11 +11,13 @@
     
           <div class="news-container" v-if="stockData?.news && stockData.news.length > 0">
             <div v-for="(item, index) in stockData.news" :key="index" class="news-item">
-              <div class="news-header" v-if="item.title">
-                <h3 class="news-title">{{ item.title }}</h3>
-                <span class="news-source" v-if="item.source">{{ item.source }}</span>
-              </div>
               <p class="news-summary">{{ item.summary }}</p>
+              <a v-if="item.url" :href="item.url" target="_blank" class="news-source-link">
+                Source: {{ item.source || 'Unknown' }}
+              </a>
+              <span v-else class="news-source-text">
+                Source: {{ item.source || 'Unknown' }}
+              </span>
             </div>
           </div>
           
@@ -159,6 +161,8 @@
     text-align: left;
     border: 1px solid rgba(255, 255, 255, 0.1);
     transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
   }
   
   .news-item:hover {
@@ -167,36 +171,28 @@
     transform: translateY(-2px);
   }
   
-  .news-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1rem;
-  }
-  
-  .news-title {
-    font-size: 1.1rem;
-    color: #e0e0e0;
-    margin: 0;
-    flex: 1;
-  }
-  
-  .news-source {
-    font-size: 0.8rem;
-    color: #ffd700;
-    background: rgba(255, 215, 0, 0.1);
-    padding: 0.2rem 0.6rem;
-    border-radius: 999px;
-    margin-left: 1rem;
-  }
-  
   .news-summary {
     line-height: 1.6;
     color: #d1d5db;
     font-size: 0.95rem;
     white-space: pre-line; 
-    margin: 0;
+    margin: 0 0 1rem 0;
     text-align: justify;
+  }
+  
+  .news-source-link {
+    align-self: flex-start;
+    font-size: 0.8rem;
+    color: #ffd700;
+    text-decoration: underline;
+    margin-top: auto;
+  }
+  
+  .news-source-text {
+    align-self: flex-start;
+    font-size: 0.8rem;
+    color: #ffd700;
+    margin-top: auto;
   }
   
   .no-news {

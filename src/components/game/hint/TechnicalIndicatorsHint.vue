@@ -9,7 +9,7 @@
         </div>
 
         <div class="indicators-content">
-          <div v-if="indicators && indicators.rsi !== null && indicators.macd !== null" class="indicators-grid">
+          <div v-if="indicators" class="indicators-grid">
             <!-- RSI Indicator -->
             <div class="indicator-card">
               <h3>RSI (Relative Strength Index)</h3>
@@ -31,7 +31,7 @@
             <!-- MACD Indicator -->
             <div class="indicator-card">
               <h3>MACD (Moving Average Convergence Divergence)</h3>
-              <div class="indicator-value" :class="getMacdClass()">
+              <div class="indicator-value" :class="getMacdClass(indicators.macd.value, indicators.macd.signal)">
                 {{ indicators.macd.value.toFixed(2) }}
               </div>
               <div class="indicator-secondary">
@@ -46,6 +46,9 @@
             <div class="indicator-analysis">
               <h3>Market Analysis</h3>
               <p>{{ generatedAnalysis }}</p>
+              <div v-if="usingCalculatedValues" class="calculated-warning">
+                <i>* Calculated values based on price history, may not be completely accurate</i>
+              </div>
             </div>
           </div>
           
@@ -63,6 +66,13 @@
 <script>
 import { useTimer } from '@/utils/timerUtils';
 import { PopupState } from '@/utils/popupEventBus';
+import { 
+  calculateRSI, 
+  calculateMACD, 
+  extractClosingPrices,
+  getRsiClass,
+  getMacdClass
+} from '@/utils/technicalIndicatorUtils';
 
 export default {
   name: 'TechnicalIndicatorsHint',
@@ -84,7 +94,8 @@ export default {
     return {
       countdown: 15,
       timer: null,
-      indicators: null
+      indicators: null,
+      usingCalculatedValues: false
     };
   },
   computed: {
@@ -143,50 +154,82 @@ export default {
       this.timer = useTimer(
         15, 
         (time) => { this.countdown = time; }, 
-        () => { 
-          this.$emit('close'); 
+        () => {
           PopupState.deactivateModalPopup('technicalIndicators');
+          this.$emit('close'); 
         }
       );
       this.timer.start();
     },
-    getRsiClass(rsi) {
-      if (rsi > 70) return 'overbought';
-      if (rsi < 30) return 'oversold';
-      return 'neutral';
-    },
-    getMacdClass() {
-      if (!this.indicators) return '';
-      const macdValue = this.indicators.macd.value;
-      const signalValue = this.indicators.macd.signal;
-      
-      // Strong bullish: Positive MACD and above signal line
-      if (macdValue > 0 && macdValue > signalValue) return 'bullish';
-      
-      // Weak bullish: Negative MACD but crossing above signal line (momentum changing)
-      if (macdValue <= 0 && macdValue > signalValue) return 'weak-bullish';
-      
-      // Weak bearish: Positive MACD but crossing below signal line (momentum weakening)
-      if (macdValue > 0 && macdValue <= signalValue) return 'weak-bearish';
-      
-      // Strong bearish: Negative MACD and below signal line
-      return 'bearish';
-    },
+    getRsiClass,
+    getMacdClass,
     getRsiWidth() {
-      // Convert RSI (0-100) to a percentage width for the scale bar
       if (!this.indicators) return 50;
       return Math.min(100, Math.max(0, this.indicators.rsi));
     },
     loadIndicators() {
-      // Simply use the fetched indicators data
-      if (this.stockData?.technicalIndicators) {
+      // check if API-fetched indicators are available
+      if (this.stockData?.technicalIndicators?.rsi !== undefined && 
+          this.stockData?.technicalIndicators?.macd?.value !== undefined) {
+        
+        // use fetched indicators
         this.indicators = {
           rsi: this.stockData.technicalIndicators.rsi,
           macd: this.stockData.technicalIndicators.macd
         };
+        this.usingCalculatedValues = false;
       } else {
-        console.warn("No prefetched indicators available for", this.stockData?.symbol);
+        // if no fetched indicators, calculate them
+        this.calculateIndicatorsFromHistory();
+        this.usingCalculatedValues = true;
       }
+    },
+    calculateIndicatorsFromHistory() {
+      if (!this.stockData?.history || !Array.isArray(this.stockData.history) || this.stockData.history.length < 30) {
+        if (this.stockData?.prices && this.stockData.prices.length >= 14) {
+          this.calculateIndicatorsFromPrices(this.stockData.prices);
+          return;
+        }
+        
+        this.setDefaultIndicators();
+        return;
+      }
+      
+      const closingPrices = extractClosingPrices(this.stockData.history);
+      
+      if (closingPrices.length < 14) {
+        this.setDefaultIndicators();
+        return;
+      }
+      
+      this.calculateIndicatorsFromPrices(closingPrices);
+    },
+    calculateIndicatorsFromPrices(prices) {
+      // Calculate RSI
+      const rsi = calculateRSI(prices);
+      
+      // Calculate MACD
+      const macdResult = calculateMACD(prices);
+      
+      // Set indicators with calculated values
+      this.indicators = {
+        rsi,
+        macd: {
+          value: macdResult.macd,
+          signal: macdResult.signal,
+          histogram: macdResult.histogram
+        }
+      };
+    },
+    setDefaultIndicators() {
+      this.indicators = {
+        rsi: 50,
+        macd: {
+          value: 0,
+          signal: 0,
+          histogram: 0
+        }
+      };
     }
   },
   mounted() {
@@ -242,6 +285,7 @@ export default {
   display: flex;
   flex-direction: column;
 }
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -288,6 +332,7 @@ export default {
     "analysis analysis";
   gap: 24px;
 }
+
 .indicators-grid > div:nth-child(1) {
   grid-area: rsi;
 }
@@ -369,6 +414,7 @@ export default {
   gap: 8px;
   margin-top: 8px;
 }
+
 .scale-bar {
   flex-grow: 1;
   height: 8px;
@@ -414,6 +460,7 @@ export default {
 .bearish {
   color: #ef4444; 
 }
+
 .weak-bearish {
   color: #f1a3a3; 
 }
@@ -458,6 +505,18 @@ export default {
   background: rgba(255, 215, 0, 0.2);
   transform: translateY(-2px);
 }
+
+.calculated-warning {
+  margin-top: 12px;
+  padding: 8px;
+  background: rgba(255, 215, 0, 0.1);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: rgba(255, 215, 0, 0.8);
+  text-align: center;
+  font-style: italic;
+}
+
 @media (max-width: 768px) {
   .indicators-popup {
     width: 95%;

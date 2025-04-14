@@ -1,8 +1,6 @@
 import axios from 'axios';
-import { TWELVE_DATA_API } from '../config/api';
+import {TWELVE_DATA_INDICATORS_API } from '../config/api';
 import { logError } from '../utils/errorUtils';
-
-const API_KEY = '122de5df06a84b4997063f18b88da2e8';
 
 /**
  * Fetch the two most important technical indicators for buy/sell decisions
@@ -11,7 +9,7 @@ const API_KEY = '122de5df06a84b4997063f18b88da2e8';
  */
 export const fetchTechnicalIndicators = async (symbol) => {
   try {
-    console.log(`Fetching essential indicators for ${symbol} using API key ${API_KEY.substring(0, 5)}...`);
+    console.log(`Fetching essential indicators for ${symbol}...`);
     
     const macdPromise = fetchIndicator(symbol, 'macd');
     const rsiPromise = fetchIndicator(symbol, 'rsi');
@@ -50,11 +48,11 @@ const fetchIndicator = async (symbol, indicator, interval = '1day') => {
   try {
     console.log(`Fetching ${indicator} for ${symbol}`);
     
-    const response = await axios.get(`${TWELVE_DATA_API.BASE_URL}/${indicator}`, {
+    const response = await axios.get(`${TWELVE_DATA_INDICATORS_API.BASE_URL}/${indicator}`, {
       params: {
         symbol,
         interval,
-        apikey: API_KEY,
+        apikey: TWELVE_DATA_INDICATORS_API.KEY,
         outputsize: 1  // only need the latest value
       }
     });

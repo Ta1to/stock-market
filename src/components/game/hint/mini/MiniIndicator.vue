@@ -17,9 +17,13 @@
       
       <div class="indicator-item" v-if="indicators">
         <div class="indicator-label">MACD:</div>
-        <div class="indicator-value" :class="getMacdClass()">
+        <div class="indicator-value" :class="getMacdClass(indicators.macd.value, indicators.macd.signal)">
           {{ indicators.macd.value.toFixed(2) }}
         </div>
+      </div>
+      
+      <div v-if="usingCalculatedValues" class="calculated-notice">
+        * Calculated values 
       </div>
     </div>
   </div>
@@ -27,6 +31,13 @@
 
 <script>
 import { PopupState } from '@/utils/popupEventBus';
+import { 
+  calculateRSI, 
+  calculateMACD, 
+  extractClosingPrices,
+  getRsiClass,
+  getMacdClass
+} from '@/utils/technicalIndicatorUtils';
 
 export default {
   name: 'MiniIndicators',
@@ -43,7 +54,8 @@ export default {
   data() {
     return {
       indicators: null, 
-      popupId: 'mini-indicators'
+      popupId: 'mini-indicators',
+      usingCalculatedValues: false
     };
   },
   computed: {
@@ -73,47 +85,77 @@ export default {
         PopupState.activatePopup(this.popupId);
       }
     },
-    getRsiClass(rsi) {
-      if (rsi > 70) return 'overbought';
-      if (rsi < 30) return 'oversold';
-      return 'neutral';
-    },
-    getMacdClass() {
-      if (!this.indicators) return '';
-      const macdValue = this.indicators.macd.value;
-      const signalValue = this.indicators.macd.signal;
-      
-      // Strong bullish: Positive MACD and above signal line
-      if (macdValue > 0 && macdValue > signalValue) return 'bullish';
-      
-      // Weak bullish: Negative MACD but crossing above signal line (momentum changing)
-      if (macdValue <= 0 && macdValue > signalValue) return 'weak-bullish';
-      
-      // Weak bearish: Positive MACD but crossing below signal line (momentum weakening)
-      if (macdValue > 0 && macdValue <= signalValue) return 'weak-bearish';
-      
-      // Strong bearish: Negative MACD and below signal line
-      return 'bearish';
-    },
+    getRsiClass,
+    getMacdClass,
     loadIndicators() {
       try {
-        console.log("MiniIndicator: Loading indicators from fetched data");
-        if (this.stockData?.technicalIndicators) {
+        if (this.stockData?.technicalIndicators?.rsi !== undefined && 
+            this.stockData?.technicalIndicators?.macd?.value !== undefined) {
+          
           this.indicators = {
             rsi: this.stockData.technicalIndicators.rsi,
             macd: this.stockData.technicalIndicators.macd
           };
-          console.log("MiniIndicator: Loaded indicators:", this.indicators);
+          this.usingCalculatedValues = false;
         } else {
-          console.warn("No technical indicators available for", this.stockData?.symbol);
+          // if no fetched indicators are available, calculate them
+          this.calculateIndicatorsFromHistory();
+          this.usingCalculatedValues = true;
         }
       } catch (error) {
         console.error('Error loading indicators:', error);
+        // fallback to calculated indicators
+        this.calculateIndicatorsFromHistory();
+        this.usingCalculatedValues = true;
       }
+    },
+    calculateIndicatorsFromHistory() {
+      // first check if we have historical price data
+      if (!this.stockData?.history || !Array.isArray(this.stockData.history) || this.stockData.history.length < 30) {
+        if (this.stockData?.prices && this.stockData.prices.length >= 14) {
+          this.calculateIndicatorsFromPrices(this.stockData.prices);
+          return;
+        }
+        
+        this.setDefaultIndicators();
+        return;
+      }
+      
+      const closingPrices = extractClosingPrices(this.stockData.history);
+      
+      if (closingPrices.length < 14) {
+        this.setDefaultIndicators();
+        return;
+      }
+      
+      this.calculateIndicatorsFromPrices(closingPrices);
+    },
+    calculateIndicatorsFromPrices(prices) {
+      const rsi = calculateRSI(prices);
+      
+      const macdResult = calculateMACD(prices);
+      
+      this.indicators = {
+        rsi,
+        macd: {
+          value: macdResult.macd,
+          signal: macdResult.signal,
+          histogram: macdResult.histogram
+        }
+      };
+    },
+    setDefaultIndicators() {
+      this.indicators = {
+        rsi: 50,
+        macd: {
+          value: 0,
+          signal: 0,
+          histogram: 0
+        }
+      };
     }
   },
   mounted() {
-    console.log("MiniIndicator component mounted");
     this.loadIndicators();
   }, 
   beforeUnmount() {
@@ -203,23 +245,33 @@ export default {
 }
 
 .bullish {
-  color: #10b981; /* Strong green for bullish */
+  color: #10b981; 
 }
 
 .weak-bullish {
-  color: #7acea3; /* Lighter green for weak bullish */
+  color: #7acea3; 
 }
 
 .bearish {
-  color: #ef4444; /* Strong red for bearish */
+  color: #ef4444; 
 }
 
 .weak-bearish {
-  color: #f1a3a3; /* Lighter red for weak bearish */
+  color: #f1a3a3; 
 }
 
 .neutral {
   color: #ffd700;
+}
+
+.calculated-notice {
+  font-size: 0.75rem;
+  color: rgba(255, 215, 0, 0.7);
+  font-style: italic;
+  text-align: center;
+  margin-top: 8px;
+  padding: 4px;
+  border-top: 1px dashed rgba(255, 215, 0, 0.3);
 }
 
 @media (max-width: 768px) {

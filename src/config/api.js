@@ -10,6 +10,12 @@ export const TWELVE_DATA_API = {
   KEY: process.env.VUE_APP_TWELVE_DATA_API_KEY
 };
 
+// Twelve Data Indicators API config
+export const TWELVE_DATA_INDICATORS_API = {
+  BASE_URL: 'https://api.twelvedata.com',
+  KEY: process.env.VUE_APP_TWELVE_DATA_INDICATORS_API_KEY
+};
+
 // Alpha Vantage API configs
 export const ALPHA_VANTAGE_API = {
   BASE_URL: 'https://www.alphavantage.co/query',
