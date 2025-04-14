@@ -27,8 +27,15 @@
         <button v-if="isCreator" @click="deleteGame" class="action-button delete-button">
           <i class="fas fa-trash-alt"></i> Spiel löschen
         </button>
-        <button v-if="isCreator" @click="startGame" class="action-button start-button">
-          <i class="fas fa-play"></i> Spiel starten
+        <button 
+          v-if="isCreator" 
+          @click="startGame" 
+          class="action-button start-button"
+          :disabled="isLoading"
+        >
+          <i v-if="!isLoading" class="fas fa-play"></i>
+          <i v-else class="fas fa-spinner fa-spin"></i>
+          {{ isLoading ? 'Wird geladen...' : 'Spiel starten' }}
         </button>
         <button 
           v-if="!isCreator" 

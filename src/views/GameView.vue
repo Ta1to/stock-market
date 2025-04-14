@@ -47,7 +47,7 @@
 
       <!-- StockSelector as Modal -->
       <StockSelector
-        :visible="gameStore.currentPhase === 1"
+        :visible="gameStore.currentPhase === 1 && gameStore.currentRound <= gameStore.totalRounds"
         :gameId="route.params.id"
         :roundNumber="gameStore.currentRound"
         :isCreator="isCreator"
@@ -124,8 +124,7 @@
 
       <!-- Game Winner (after final round) -->
       <GameWinner
-        v-if="gameStore.currentRound > gameStore.totalRounds && gameStore.players.length"
-        :visible="showGameWinner"
+        :visible="showGameWinner || (gameStore.currentRound > gameStore.totalRounds && gameStore.players.length)"
         :players="gameStore.players"
         :gameId="route.params.id"
         :onGameEnd="handleGameEnd"
@@ -294,11 +293,15 @@ export default {
         // Determine winner based on the active players
         const activePlayers = gameStore.players.filter((p) => !gameStore.folds[p.uid]);
         
+        // Save the current pot amount before any changes
+        roundPot.value = gameStore.pot;
+        
         if (activePlayers.length === 1) {
           // Only one player left (others folded)
           roundWinner.value = activePlayers[0];
           // Add pot to winner's chips
           gameStore.addChipsToPlayer(roundWinner.value.uid, gameStore.pot);
+          console.log(`Player ${roundWinner.value.name} wins ${roundPot.value} chips (sole remaining player)`);
         } else {
           // Multiple players remain - determine winner by prediction accuracy
           const currentPrice = stockData.value?.prices[stockData.value.prices.length - 1] || 0;
@@ -311,6 +314,7 @@ export default {
             const prediction = gameStore.predictions[player.uid];
             if (prediction !== undefined) {
               const difference = Math.abs(prediction - currentPrice);
+              console.log(`Player ${player.name} prediction: ${prediction}, difference: ${difference}`);
               
               // If this player has a better prediction than current best
               if (difference < smallestDifference) {
@@ -330,28 +334,31 @@ export default {
             roundWinner.value = {
               isTie: true,
               players: closestPlayers,
+              name: closestPlayers.map(p => p.name).join(', '),
               // Include a message about the pot being split
               message: `Tie! The pot will be split among ${closestPlayers.length} players.`
             };
             
             // Split the pot equally among tied players
             const splitAmount = Math.floor(gameStore.pot / closestPlayers.length);
+            console.log(`Tie! Pot of ${roundPot.value} split among ${closestPlayers.length} players. Each gets ${splitAmount}`);
+            
             // Distribute chips to each winner
             closestPlayers.forEach(player => {
               gameStore.addChipsToPlayer(player.uid, splitAmount);
             });
-          } else {
+          } else if (closestPlayers.length === 1) {
             // Single winner
             roundWinner.value = closestPlayers[0];
             // Add pot to winner's chips
+            console.log(`Player ${roundWinner.value.name} wins ${roundPot.value} chips with best prediction`);
             gameStore.addChipsToPlayer(roundWinner.value.uid, gameStore.pot);
+          } else {
+            console.warn("No winner could be determined - no valid predictions found");
           }
         }
         
-        // Set the pot amount for display in winner component
-        roundPot.value = gameStore.pot;
-        
-        // Reset the pot for the next round
+        // Reset the pot for the next round after all chips have been distributed
         gameStore.resetPot();
       }
     });
@@ -474,7 +481,10 @@ export default {
     function handleWinnerContinue() {
       // If this was the final round, show the game winner
       if (gameStore.currentRound >= gameStore.totalRounds) {
+        console.log("Final round completed, showing game winner screen");
         showGameWinner.value = true;
+        // Prevent moving to the next phase/round which would trigger StockSelector
+        return; 
       } else {
         // Otherwise, move to the next round
         gameStore.nextPhase();
