@@ -55,6 +55,7 @@ const fetchIndicator = async (symbol, indicator, interval = '1day') => {
     
     if (!response.data || response.data.status === 'error') {
       const errorMsg = response.data?.message || 'Unknown API error';
+      console.error(errorMsg); 
       return null;
     }
     

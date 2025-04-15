@@ -275,7 +275,7 @@ export default {
       }
     });
 
-    watch(() => gameStore.currentPhase, async (newPhase, oldPhase) => {
+    watch(() => gameStore.currentPhase, async (newPhase) => {
       // close all popups when phase changes
       PopupState.activePopup = null;
 

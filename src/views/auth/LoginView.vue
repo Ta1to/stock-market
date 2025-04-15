@@ -129,7 +129,7 @@ export default {
       const auth = getAuth();
       
       try {
-        const userCredential = await signInWithEmailAndPassword(auth, this.email, this.password);
+        await signInWithEmailAndPassword(auth, this.email, this.password);
         this.$router.push('/');
       } catch (error) {
         this.error = this.getErrorMessage(error.code);
