@@ -18,7 +18,6 @@ export default {
     const auth = getAuth();
 
     async function leaveGame() {
-      console.log("Leaving game...");
       const user = auth.currentUser;
       if (!user) {
         console.log("No user logged in.");

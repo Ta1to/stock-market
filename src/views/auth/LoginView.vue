@@ -130,7 +130,6 @@ export default {
       
       try {
         const userCredential = await signInWithEmailAndPassword(auth, this.email, this.password);
-        console.log("User logged in:", userCredential.user);
         this.$router.push('/');
       } catch (error) {
         this.error = this.getErrorMessage(error.code);

@@ -12,9 +12,7 @@ jest.mock('@/utils/errorUtils', () => ({
 }));
 
 // Import modules under test after mocking
-import { getTechnicalIndicators } from '@/api/indicator-api';
 import { logError } from '@/utils/errorUtils';
-import { TWELVE_DATA_API } from '@/config/api';
 import axios from 'axios';
 
 describe('Indicator API', () => {

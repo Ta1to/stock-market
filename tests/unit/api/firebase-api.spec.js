@@ -11,7 +11,6 @@ import {
 } from '@/api/firebase-api';
 
 import { 
-  getAuth,
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut 

@@ -179,20 +179,16 @@ export default {
           const stocks = await getRandomStock(1);
           const stockDetails = await Promise.all(
             stocks.map(async (stock) => {
-              console.log('Getting info for stock:', stock);
               // Get price data
               const { dates, prices } = await getStockHistory(stock.symbol);
               // Get company description
               const companyInfo = await getStockInfo(stock.symbol);
-              console.log('Received company info for', stock.symbol, ':', companyInfo);
 
               // Get news for this stock
               const newsItems = await getStockNews(stock.symbol, 2); 
-              console.log('Received news for', stock.symbol, ':', newsItems.length, 'items');
 
               // Get technical indicators
               const technicalIndicators = await fetchTechnicalIndicators(stock.symbol);
-              console.log('Received technical indicators for', stock.symbol, ':', technicalIndicators);
 
               if (validateStockAPI && (!dates || !prices || dates.length === 0 || prices.length === 0 || !companyInfo)) {
                 console.error("API data missing for stock:", stock.symbol, { dates, prices, companyInfo });

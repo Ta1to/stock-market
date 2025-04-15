@@ -12,7 +12,6 @@ jest.mock('@/utils/errorUtils', () => ({
 }));
 
 // Import modules under test after mocking
-import { getStockDescription } from '@/api/description-api';
 import { logError } from '@/utils/errorUtils';
 import { ALPHA_VANTAGE_API } from '@/config/api';
 import axios from 'axios';

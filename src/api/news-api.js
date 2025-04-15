@@ -14,9 +14,7 @@ import { MARKETAUX_API } from '../config/api';
  */
 export const getStockNews = async (symbol, limit = 3) => {
   try {
-    const formattedSymbol = symbol.toUpperCase();
-    console.log(`Fetching news for ${formattedSymbol}`);
-    
+    const formattedSymbol = symbol.toUpperCase();    
     const params = {
       symbols: formattedSymbol,
       language: 'en',
@@ -28,7 +26,6 @@ export const getStockNews = async (symbol, limit = 3) => {
     
     params.search = `"${formattedSymbol}"`;
     
-    console.log('API request params:', params);
     const response = await axios.get(MARKETAUX_API.BASE_URL, { params });
 
     if (!response.data) {
@@ -44,7 +41,6 @@ export const getStockNews = async (symbol, limit = 3) => {
     }
 
     let newsItems = response.data.data || [];
-    console.log(`Received ${newsItems.length} news items for ${formattedSymbol}`);
     
     // enhanced quality filtering
     newsItems = newsItems.filter(item => {
@@ -88,7 +84,6 @@ export const getStockNews = async (symbol, limit = 3) => {
     });
     
     if (newsItems.length === 0) {
-      console.log(`No quality news found for ${formattedSymbol}, trying less strict filtering.`);
       // fall back to less strict filtering, but still require a period at the end
       newsItems = response.data.data?.filter(item => {
         if (!item.description || item.description.length < 60) return false;
@@ -114,12 +109,10 @@ export const getStockNews = async (symbol, limit = 3) => {
         };
       });
 
-    console.log(`Returning ${processedNews.length} quality news for ${formattedSymbol}`);
     return processedNews;
 
   } catch (error) {
     logError(error, 'NewsAPI:getStockNews');
-    console.error('Error fetching news:', error.message);
     return [];
   }
 };

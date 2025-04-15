@@ -83,7 +83,6 @@ export default {
       this.prediction = '';
       this.hasPredicted = false;
       this.submittedPrediction = null;
-      console.log('StockPrediction reset for new round:', this.roundNumber);
     },
     // Also reset when visibility changes
     visible(newVal) {

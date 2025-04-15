@@ -200,16 +200,13 @@ export default {
     const currentUserChips = computed(() => {
       if (!currentUser.value || !gameStore.players.length) return 0;
       const player = gameStore.players.find(p => p.uid === currentUser.value.uid);
-      console.log("Current user chips:", player.chips);
       return player.chips;
     });
 
     const stockData = computed(() => {
       const currentRound = gameStore.currentRound;
       const roundData = gameStore.rounds?.[currentRound];
-      
-      console.log("Current round data:", roundData);
-      
+            
       if (!roundData?.stocks?.[0]) {
         console.warn("No stocks data available for current round");
         return null;
@@ -240,14 +237,9 @@ export default {
     // Computed property to determine if it's the current user's turn
     const isMyTurn = computed(() => {
       if (!currentUser.value || !gameStore.players.length) {
-        console.log("isMyTurn: missing user or players", { currentUser: currentUser.value, players: gameStore.players });
         return false;
       }
       const currentPlayer = gameStore.players[gameStore.currentTurnIndex];
-      console.log("isMyTurn:", {
-        currentUserUid: currentUser.value.uid,
-        currentPlayer: currentPlayer
-      });
       // Adjust property names (uid or id) as needed:
       return currentUser.value.uid === currentPlayer.uid;
     });
@@ -284,7 +276,6 @@ export default {
     });
 
     watch(() => gameStore.currentPhase, async (newPhase, oldPhase) => {
-      console.log(`Phase changed from ${oldPhase} to ${newPhase}`);
       // close all popups when phase changes
       PopupState.activePopup = null;
 
@@ -301,7 +292,6 @@ export default {
           roundWinner.value = activePlayers[0];
           // Add pot to winner's chips
           gameStore.addChipsToPlayer(roundWinner.value.uid, gameStore.pot);
-          console.log(`Player ${roundWinner.value.name} wins ${roundPot.value} chips (sole remaining player)`);
         } else {
           // Multiple players remain - determine winner by prediction accuracy
           const currentPrice = stockData.value?.prices[stockData.value.prices.length - 1] || 0;
@@ -314,7 +304,6 @@ export default {
             const prediction = gameStore.predictions[player.uid];
             if (prediction !== undefined) {
               const difference = Math.abs(prediction - currentPrice);
-              console.log(`Player ${player.name} prediction: ${prediction}, difference: ${difference}`);
               
               // If this player has a better prediction than current best
               if (difference < smallestDifference) {
@@ -341,7 +330,6 @@ export default {
             
             // Split the pot equally among tied players
             const splitAmount = Math.floor(gameStore.pot / closestPlayers.length);
-            console.log(`Tie! Pot of ${roundPot.value} split among ${closestPlayers.length} players. Each gets ${splitAmount}`);
             
             // Distribute chips to each winner
             closestPlayers.forEach(player => {
@@ -351,7 +339,6 @@ export default {
             // Single winner
             roundWinner.value = closestPlayers[0];
             // Add pot to winner's chips
-            console.log(`Player ${roundWinner.value.name} wins ${roundPot.value} chips with best prediction`);
             gameStore.addChipsToPlayer(roundWinner.value.uid, gameStore.pot);
           } else {
             console.warn("No winner could be determined - no valid predictions found");
@@ -366,7 +353,6 @@ export default {
     // Watch for final round completion
     watch(() => gameStore.currentRound, (newRound) => {
       if (newRound > gameStore.totalRounds) {
-        console.log("Game is complete! Showing final winner.");
         showGameWinner.value = true;
       }
     });
@@ -374,15 +360,10 @@ export default {
     onMounted(() => {
       unsubscribeAuth = onAuthStateChanged(auth, (user) => {
         currentUser.value = user;
-        console.log("Auth state changed:", user);
         if (user) {
           const gameId = route.params.id;
           gameStore.subscribeToGame(gameId);
-          // Delay logging players to ensure subscription has updated them:
-          setTimeout(() => {
-            console.log("Players array after subscription:", gameStore.players);
-            console.log("Current turn index:", gameStore.currentTurnIndex);
-          }, 1000);
+          setTimeout(() => 1000);
         }
       });
     });
@@ -416,19 +397,16 @@ export default {
 
     /* Betting logic */
     function handleBet(amount) {
-      console.log('Bet placed:', amount);
       if (!currentUser.value) return;
       const playerId = currentUser.value.uid;
       gameStore.placeBet(playerId, amount);
     }
     function handleCheck() {
-      console.log('Check action triggered');
       if (!currentUser.value) return;
       const playerId = currentUser.value.uid;
       gameStore.placeBet(playerId, 0);
     }
     function handleFold() {
-      console.log('Fold action triggered');
       if (!currentUser.value) return;
       const playerId = currentUser.value.uid;
       gameStore.fold(playerId);
@@ -436,13 +414,11 @@ export default {
 
     //close news popup and move to next phase
     function handleNewsClose() {
-      console.log('News popup closed, moving to next phase');
       gameStore.nextPhase();
     }
 
     // Close technical indicators popup and move to next phase
     function handleIndicatorsClose() {
-      console.log('Technical indicators popup closed, moving to next phase');
       gameStore.nextPhase();
     }
   
@@ -452,9 +428,7 @@ export default {
     }
 
     async function handleStockPhaseComplete() {
-      console.log('Phase complete, moving to next phase');
       if (gameStore.currentPhase === 2 && !gameStore.allPlayersPredicted) {
-        console.warn("Not all players have predicted yet.");
         return;
       }
       await gameStore.nextPhase();
@@ -466,7 +440,6 @@ export default {
         // Delete the game from Firestore
         const gameId = route.params.id;
         await deleteDoc(doc(db, "games", gameId));
-        console.log(`Game ${gameId} deleted successfully`);
         
         // Reset game store
         gameStore.resetGame();
@@ -481,7 +454,6 @@ export default {
     function handleWinnerContinue() {
       // If this was the final round, show the game winner
       if (gameStore.currentRound >= gameStore.totalRounds) {
-        console.log("Final round completed, showing game winner screen");
         showGameWinner.value = true;
         // Prevent moving to the next phase/round which would trigger StockSelector
         return; 

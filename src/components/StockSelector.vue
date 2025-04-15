@@ -49,7 +49,6 @@ export default {
     };
   },
   created() {
-    console.log('StockSelector created with gameId:', this.gameId, 'round:', this.roundNumber);
     this.setupListener();
   },
   watch: {
@@ -59,33 +58,27 @@ export default {
       this.countdown = 5;
       this.spinning = false;
       this.displayedStock = this.$options.data().displayedStock;
-      console.log('Round changed to:', this.roundNumber, 'resetting state');
       // Re-setup listener for the new round
       this.setupListener();
     },
     visible(newVal) {
       if (newVal) {
-        console.log('StockSelector became visible for round:', this.roundNumber);
         this.setupListener();
       }
     }
   },
   methods: {
     setupListener() {
-      console.log('Setting up listener for round:', this.roundNumber);
       const roundRef = ref(db, `games/${this.gameId}/rounds/${this.roundNumber}`);
       
       // First get the pre-selected stock from the database
       get(roundRef).then((snapshot) => {
         const data = snapshot.val();
-        console.log('Round data from get():', data);
         
         if (data?.stocks && data.stocks.length > 0) {
           this.preSelectedStock = data.stocks[0];
-          console.log('Pre-selected stock for this round:', this.preSelectedStock);
         } else {
           console.warn('No stocks found in the database for this round');
-          console.log('Full data structure:', JSON.stringify(data));
         }
       }).catch(error => {
         console.error('Error getting round data:', error);
@@ -93,11 +86,9 @@ export default {
       
       onValue(roundRef, (snapshot) => {
         const data = snapshot.val();
-        console.log('Round data received from onValue:', data);
         
         // If we have no data for this round yet, we need to initialize it for spinning
         if (!data && this.isCreator) {
-          console.log('No data for round, initializing');
           updateData(`games/${this.gameId}/rounds/${this.roundNumber}`, {
             phase: 1,
             isSpinning: false
@@ -107,7 +98,6 @@ export default {
         // Update preSelectedStock from onValue as well in case it changed
         if (data?.stocks && data.stocks.length > 0 && !this.preSelectedStock) {
           this.preSelectedStock = data.stocks[0];
-          console.log('Updated preSelectedStock from onValue:', this.preSelectedStock);
         }
         
         if (data?.isSpinning && !this.spinning) {
@@ -120,7 +110,6 @@ export default {
     },
 
     async initiateSpin() {
-      console.log('Initiate spin clicked, isCreator:', this.isCreator, 'preSelectedStock:', this.preSelectedStock);
       
       if (!this.isCreator || !this.preSelectedStock) {
         console.warn('Cannot initiate spin: either not creator or no stock data available');
@@ -144,7 +133,6 @@ export default {
     },
 
     startSpinAnimation() {
-      console.log('Starting spin animation');
       this.spinning = true;
       this.spinInterval = setInterval(() => {
         //rotation through stocklist 
@@ -154,7 +142,6 @@ export default {
     },
 
     stopSpinAnimation() {
-      console.log('Stopping spin animation with preSelectedStock:', this.preSelectedStock);
       clearInterval(this.spinInterval);
       this.spinning = false;
       

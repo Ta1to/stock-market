@@ -174,7 +174,6 @@ export default {
           createdAt: new Date().toISOString()
         });
 
-        console.log("User registered:", userCredential.user);
         this.$router.push('/');
       } catch (error) {
         this.error = this.getErrorMessage(error.code);

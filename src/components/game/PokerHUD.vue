@@ -88,7 +88,7 @@ export default {
         this.$emit("bet-placed", this.betAmount);
         this.betAmount = 0;
       } else {
-        console.log("Invalid bet amount.");
+        console.error("Invalid bet amount.");
       }
     },
     check() {
