@@ -306,9 +306,7 @@ export default {
   text-overflow: ellipsis;
   max-width: 100px;
   position: absolute;
-  bottom: 160px;
-  text-align: center;
-  width: 100%;
+  bottom: 140px;
 }
 
 .player-chips {
@@ -318,9 +316,7 @@ export default {
   padding: 3px 8px;
   border-radius: 10px;
   position: absolute;
-  bottom: 140px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 120px;
 }
 
 .first-place .player-chips {
@@ -462,12 +458,12 @@ export default {
   .player-name {
     font-size: 0.9rem;
     max-width: 80px;
-    bottom: 130px;
+    bottom: 115px;
   }
   
   .player-chips {
     font-size: 0.8rem;
-    bottom: 110px;
+    bottom: 95px;
   }
 }
 
@@ -505,12 +501,12 @@ export default {
   .player-name {
     font-size: 0.8rem;
     max-width: 60px;
-    bottom: 100px;
+    bottom: 90px;
   }
   
   .player-chips {
     font-size: 0.7rem;
-    bottom: 85px;
+    bottom: 75px;
   }
   
   .winner-title {

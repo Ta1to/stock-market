@@ -1,23 +1,28 @@
-// Mock Firebase modules first
-jest.mock('firebase/database', () => {
-  // Mock-Referenz für Datenbankoperationen
-  const mockDbRef = {};
-  
-  // Mock-Funktionen, die bei jedem Test zurückgesetzt werden können
-  return {
-    ref: jest.fn(() => mockDbRef),
-    set: jest.fn(() => Promise.resolve()),
-    get: jest.fn(),
-    update: jest.fn(() => Promise.resolve()),
-    remove: jest.fn(() => Promise.resolve()),
-    onValue: jest.fn(),
-    off: jest.fn(),
-    push: jest.fn(() => Promise.resolve({ key: 'mock-key' }))
-  };
-});
+// Define mock functions before mocking modules
+const mockDbRef = {};
+const mockSet = jest.fn(() => Promise.resolve());
+const mockGet = jest.fn();
+const mockUpdate = jest.fn(() => Promise.resolve());
+const mockRemove = jest.fn(() => Promise.resolve());
+const mockOnValue = jest.fn();
+const mockOff = jest.fn();
+const mockPush = jest.fn(() => Promise.resolve({ key: 'mock-key' }));
 
+// Mock Firebase modules first
 jest.mock('@/api/firebase-api', () => ({
   db: {}
+}));
+
+// Mock Firebase database methods with the defined mocks
+jest.mock('firebase/database', () => ({
+  ref: jest.fn(() => mockDbRef),
+  set: mockSet,
+  get: mockGet,
+  update: mockUpdate,
+  remove: mockRemove,
+  onValue: mockOnValue,
+  off: mockOff,
+  push: mockPush
 }));
 
 // Import test subjects after mocking
@@ -45,28 +50,8 @@ import {
 import { ref, set, get, update, remove, onValue, off, push } from 'firebase/database';
 
 describe('Game Database Service', () => {
-  // Lokale Referenzen für die Tests
-  let mockDbRef;
-  let mockSet;
-  let mockGet;
-  let mockUpdate;
-  let mockRemove;
-  let mockOnValue;
-  let mockOff;
-  let mockPush;
-  
   beforeEach(() => {
     jest.clearAllMocks();
-    
-    // Zugriff auf die geclearten mocks erhalten
-    mockDbRef = {};
-    mockSet = set;
-    mockGet = get;
-    mockUpdate = update;
-    mockRemove = remove;
-    mockOnValue = onValue;
-    mockOff = off;
-    mockPush = push;
   });
 
   describe('Generic Database Operations', () => {
