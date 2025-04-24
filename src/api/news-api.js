@@ -20,7 +20,7 @@ export const getStockNews = async (symbol, limit = 3) => {
       language: 'en',
       filter_entities: true,
       must_have_entities: true, 
-      limit: Math.min(50, limit * 10), // Get more news to filter from (10x limit)
+      limit: Math.min(50, limit * 10), 
       api_token: MARKETAUX_API.KEY
     };
     

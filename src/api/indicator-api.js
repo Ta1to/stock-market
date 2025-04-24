@@ -8,7 +8,7 @@ import { logError } from '../utils/errorUtils';
  * @returns {Promise<object>} Object containing indicator values
  */
 export const fetchTechnicalIndicators = async (symbol) => {
-  try {    
+  try {        
     const macdPromise = fetchIndicator(symbol, 'macd');
     const rsiPromise = fetchIndicator(symbol, 'rsi');
     
@@ -43,16 +43,17 @@ export const fetchTechnicalIndicators = async (symbol) => {
  * @returns {Promise<object|null>} Latest indicator value or null if error
  */
 const fetchIndicator = async (symbol, indicator, interval = '1day') => {
-  try {    
-    const response = await axios.get(`${TWELVE_DATA_INDICATORS_API.BASE_URL}/${indicator}`, {
-      params: {
-        symbol,
-        interval,
-        apikey: TWELVE_DATA_INDICATORS_API.KEY,
-        outputsize: 1  // only need the latest value
-      }
-    });
-    
+  try {
+    const requestParams = {
+      symbol,
+      interval,
+      apikey: TWELVE_DATA_INDICATORS_API.KEY,
+      outputsize: 1  // only need the latest value
+    };
+        
+    const url = `${TWELVE_DATA_INDICATORS_API.BASE_URL}/${indicator}`;    
+    const response = await axios.get(url, { params: requestParams });
+        
     if (!response.data || response.data.status === 'error') {
       const errorMsg = response.data?.message || 'Unknown API error';
       console.error(errorMsg); 
