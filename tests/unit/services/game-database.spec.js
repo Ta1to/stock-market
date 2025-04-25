@@ -1,32 +1,3 @@
-// Define mock functions before mocking modules
-const mockDbRef = {};
-const mockSet = jest.fn(() => Promise.resolve());
-const mockGet = jest.fn();
-const mockUpdate = jest.fn(() => Promise.resolve());
-const mockRemove = jest.fn(() => Promise.resolve());
-const mockOnValue = jest.fn();
-const mockOff = jest.fn();
-const mockPush = jest.fn(() => Promise.resolve({ key: 'mock-key' }));
-
-// Mock Firebase modules first
-jest.mock('@/api/firebase-api', () => ({
-  db: {}
-}));
-
-// Mock Firebase database methods with the defined mocks
-jest.mock('firebase/database', () => ({
-  ref: jest.fn(() => mockDbRef),
-  set: mockSet,
-  get: mockGet,
-  update: mockUpdate,
-  remove: mockRemove,
-  onValue: mockOnValue,
-  off: mockOff,
-  push: mockPush
-}));
-
-// Import test subjects after mocking
-import { db } from '@/api/firebase-api';
 import {
   writeData,
   readData,
@@ -48,10 +19,45 @@ import {
 } from '@/services/game-database';
 
 import { ref, set, get, update, remove, onValue, off, push } from 'firebase/database';
+import { db } from '@/api/firebase-api';
+
+// Mock Firebase modules
+jest.mock('firebase/database', () => ({
+  ref: jest.fn(),
+  set: jest.fn(),
+  get: jest.fn(),
+  update: jest.fn(),
+  remove: jest.fn(),
+  onValue: jest.fn(),
+  off: jest.fn(),
+  push: jest.fn(),
+}));
+
+jest.mock('@/api/firebase-api', () => ({
+  db: {}
+}));
 
 describe('Game Database Service', () => {
+  // Mock objects that will be used across tests
+  const mockDbRef = {};
+  
+  // Clear all mocks before each test
   beforeEach(() => {
     jest.clearAllMocks();
+    console.log = jest.fn();
+    console.error = jest.fn();
+    console.warn = jest.fn();
+    
+    // Setup default mock implementations
+    ref.mockReturnValue(mockDbRef);
+    set.mockResolvedValue(undefined);
+    get.mockResolvedValue({
+      exists: () => true,
+      val: () => ({})
+    });
+    update.mockResolvedValue(undefined);
+    remove.mockResolvedValue(undefined);
+    push.mockResolvedValue({ key: 'mock-key' });
   });
 
   describe('Generic Database Operations', () => {
@@ -71,8 +77,7 @@ describe('Game Database Service', () => {
         const data = { test: 'data' };
         const error = new Error('Write error');
         
-        mockSet.mockRejectedValueOnce(error);
-        console.error = jest.fn();
+        set.mockRejectedValueOnce(error);
         
         await writeData(path, data);
         
@@ -83,29 +88,27 @@ describe('Game Database Service', () => {
     describe('readData', () => {
       it('should read data from the specified path', async () => {
         const path = 'test/path';
-        const mockSnapshot = {
-          exists: jest.fn(() => true),
-          val: jest.fn(() => ({ test: 'data' }))
-        };
+        const mockData = { test: 'data' };
         
-        mockGet.mockResolvedValueOnce(mockSnapshot);
+        get.mockResolvedValueOnce({
+          exists: () => true,
+          val: () => mockData
+        });
         
         const result = await readData(path);
         
         expect(ref).toHaveBeenCalledWith(db, path);
         expect(get).toHaveBeenCalledWith(mockDbRef);
-        expect(result).toEqual({ test: 'data' });
+        expect(result).toEqual(mockData);
       });
       
       it('should return null if no data exists', async () => {
         const path = 'test/path';
-        const mockSnapshot = {
-          exists: jest.fn(() => false),
-          val: jest.fn()
-        };
         
-        mockGet.mockResolvedValueOnce(mockSnapshot);
-        console.log = jest.fn();
+        get.mockResolvedValueOnce({
+          exists: () => false,
+          val: () => null
+        });
         
         const result = await readData(path);
         
@@ -117,8 +120,7 @@ describe('Game Database Service', () => {
         const path = 'test/path';
         const error = new Error('Read error');
         
-        mockGet.mockRejectedValueOnce(error);
-        console.error = jest.fn();
+        get.mockRejectedValueOnce(error);
         
         await expect(readData(path)).rejects.toThrow(error);
         
@@ -142,8 +144,7 @@ describe('Game Database Service', () => {
         const data = { test: 'data' };
         const error = new Error('Update error');
         
-        mockUpdate.mockRejectedValueOnce(error);
-        console.error = jest.fn();
+        update.mockRejectedValueOnce(error);
         
         await updateData(path, data);
         
@@ -165,8 +166,7 @@ describe('Game Database Service', () => {
         const path = 'test/path';
         const error = new Error('Delete error');
         
-        mockRemove.mockRejectedValueOnce(error);
-        console.error = jest.fn();
+        remove.mockRejectedValueOnce(error);
         
         await deleteData(path);
         
@@ -178,9 +178,12 @@ describe('Game Database Service', () => {
       it('should set up a subscription and return an unsubscribe function', () => {
         const gameId = 'game1';
         const callback = jest.fn();
-        const unsubscribe = jest.fn();
+        const unsubscribeFn = jest.fn();
         
-        mockOnValue.mockReturnValueOnce(unsubscribe);
+        // Mock off function since it's what gets called when the unsubscribe function is executed
+        ref.mockReturnValue(mockDbRef);
+        onValue.mockReturnValue(unsubscribeFn);
+        off.mockReturnValue(undefined);
         
         const result = subscribeToGameData(gameId, callback);
         
@@ -189,7 +192,8 @@ describe('Game Database Service', () => {
         
         // Call the returned function
         result();
-        expect(unsubscribe).toHaveBeenCalled();
+        // The actual implementation calls off(gameRef), not the value returned from onValue
+        expect(off).toHaveBeenCalledWith(mockDbRef);
       });
       
       it('should call the callback with snapshot data', () => {
@@ -199,7 +203,7 @@ describe('Game Database Service', () => {
         
         // Capture the callback function passed to onValue
         let capturedCallback;
-        mockOnValue.mockImplementationOnce((ref, cb) => {
+        onValue.mockImplementationOnce((ref, cb) => {
           capturedCallback = cb;
           return jest.fn();
         });
@@ -243,8 +247,10 @@ describe('Game Database Service', () => {
           phase: 3,
           currentTurnIndex: 1,
           players: [{ uid: 'player1' }, { uid: 'player2' }],
-          creator: 'player1',
-          code: 'ABC123'
+          extra: {  // Wrap creator and code in extra object
+            creator: 'player1',
+            code: 'ABC123'
+          }
         };
         
         await createGame(gameId, initialData);
@@ -258,7 +264,7 @@ describe('Game Database Service', () => {
           predictions: {},
           bets: {},
           pot: 0,
-          creator: 'player1',
+          creator: 'player1',  // Now these should be included through the extra object
           code: 'ABC123'
         });
       });
@@ -327,12 +333,10 @@ describe('Game Database Service', () => {
         const playerId = 'player1';
         const mockData = { bet: 100, folded: false };
         
-        const mockSnapshot = {
-          exists: jest.fn(() => true),
-          val: jest.fn(() => mockData)
-        };
-        
-        mockGet.mockResolvedValueOnce(mockSnapshot);
+        get.mockResolvedValueOnce({
+          exists: () => true,
+          val: () => mockData
+        });
         
         const result = await getPlayerBet(gameId, roundNumber, playerId);
         
@@ -346,12 +350,10 @@ describe('Game Database Service', () => {
         const roundNumber = 2;
         const playerId = 'player1';
         
-        const mockSnapshot = {
-          exists: jest.fn(() => false),
-          val: jest.fn()
-        };
-        
-        mockGet.mockResolvedValueOnce(mockSnapshot);
+        get.mockResolvedValueOnce({
+          exists: () => false,
+          val: () => null
+        });
         
         const result = await getPlayerBet(gameId, roundNumber, playerId);
         
@@ -364,8 +366,7 @@ describe('Game Database Service', () => {
         const playerId = 'player1';
         const error = new Error('Test error');
         
-        mockGet.mockRejectedValueOnce(error);
-        console.error = jest.fn();
+        get.mockRejectedValueOnce(error);
         
         const result = await getPlayerBet(gameId, roundNumber, playerId);
         
@@ -448,12 +449,10 @@ describe('Game Database Service', () => {
           { uid: 'player2', name: 'Player 2', chips: 2000 }
         ];
         
-        const mockSnapshot = {
-          exists: jest.fn(() => true),
-          val: jest.fn(() => mockPlayers)
-        };
-        
-        mockGet.mockResolvedValueOnce(mockSnapshot);
+        get.mockResolvedValueOnce({
+          exists: () => true,
+          val: () => mockPlayers
+        });
         
         await updatePlayerChips(gameId, playerId, newChipsAmount);
         
@@ -472,13 +471,10 @@ describe('Game Database Service', () => {
         const gameId = 'game1';
         const playerId = 'player1';
         
-        const mockSnapshot = {
-          exists: jest.fn(() => false),
-          val: jest.fn(() => null)
-        };
-        
-        mockGet.mockResolvedValueOnce(mockSnapshot);
-        console.warn = jest.fn();
+        get.mockResolvedValueOnce({
+          exists: () => false,
+          val: () => null
+        });
         
         await updatePlayerChips(gameId, playerId, 1000);
         
@@ -491,8 +487,7 @@ describe('Game Database Service', () => {
         const playerId = 'player1';
         const error = new Error('Test error');
         
-        mockGet.mockRejectedValueOnce(error);
-        console.error = jest.fn();
+        get.mockRejectedValueOnce(error);
         
         await updatePlayerChips(gameId, playerId, 1000);
         

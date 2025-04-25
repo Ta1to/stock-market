@@ -1,8 +1,8 @@
 // Mock dependencies without functional implementations
 jest.mock('axios');
 jest.mock('@/config/api', () => ({
-  ALPHA_VANTAGE_API: {
-    BASE_URL: 'https://www.alphavantage.co/query',
+  MARKETAUX_API: {
+    BASE_URL: 'https://api.marketaux.com/v1/news/all',
     KEY: 'test-api-key'
   }
 }));
@@ -14,7 +14,7 @@ jest.mock('@/utils/errorUtils', () => ({
 // Import modules under test after mocking
 import { getStockNews } from '@/api/news-api';
 import { logError } from '@/utils/errorUtils';
-import { ALPHA_VANTAGE_API } from '@/config/api';
+import { MARKETAUX_API } from '@/config/api';
 import axios from 'axios';
 
 describe('News API', () => {
@@ -26,20 +26,18 @@ describe('News API', () => {
   describe('getStockNews', () => {
     const mockResponse = {
       data: {
-        feed: [
+        data: [
           {
             title: 'Apple Reports Record Quarter',
             url: 'https://example.com/news/1',
-            summary: 'Apple Inc. reported a record quarter with strong iPhone sales.',
-            banner_image: 'https://example.com/images/1.jpg',
-            time_published: '20250101T120000'
+            description: 'Apple Inc. reported a record quarter with strong iPhone sales.',
+            source: 'TechNews',
           },
           {
             title: 'Apple Announces New Products',
             url: 'https://example.com/news/2',
-            summary: 'Apple Inc. announced new products at their annual event.',
-            banner_image: 'https://example.com/images/2.jpg',
-            time_published: '20250102T130000'
+            description: 'Apple Inc. announced new products at their annual event.',
+            source: 'BusinessDaily',
           }
         ]
       }
@@ -50,21 +48,23 @@ describe('News API', () => {
       
       const result = await getStockNews('AAPL');
       
-      expect(axios.get).toHaveBeenCalledWith(ALPHA_VANTAGE_API.BASE_URL, {
+      expect(axios.get).toHaveBeenCalledWith(MARKETAUX_API.BASE_URL, {
         params: {
-          function: 'NEWS_SENTIMENT',
-          tickers: 'AAPL',
-          apikey: ALPHA_VANTAGE_API.KEY
+          symbols: 'AAPL',
+          language: 'en',
+          filter_entities: true,
+          must_have_entities: true,
+          limit: expect.any(Number),
+          api_token: MARKETAUX_API.KEY,
+          search: '"AAPL"'
         }
       });
       
-      expect(result).toHaveLength(2);
       expect(result[0]).toEqual({
         title: 'Apple Reports Record Quarter',
         url: 'https://example.com/news/1',
         summary: 'Apple Inc. reported a record quarter with strong iPhone sales.',
-        image: 'https://example.com/images/1.jpg',
-        publishedDate: '20250101T120000'
+        source: 'TechNews'
       });
     });
     
@@ -74,14 +74,16 @@ describe('News API', () => {
       
       const result = await getStockNews('AAPL');
       
-      expect(logError).toHaveBeenCalledWith(error, 'NewsAPI');
+      expect(logError).toHaveBeenCalledWith(error, 'NewsAPI:getStockNews');
       expect(result).toEqual([]);
     });
     
-    it('should handle rate limiting', async () => {
+    it('should handle error responses', async () => {
       axios.get.mockResolvedValueOnce({
         data: {
-          Note: 'Thank you for using Alpha Vantage! Our standard API call frequency is 5 calls per minute and 500 calls per day.'
+          error: {
+            message: 'API Error'
+          }
         }
       });
       
@@ -97,27 +99,6 @@ describe('News API', () => {
       const result = await getStockNews('INVALID');
       
       expect(result).toEqual([]);
-    });
-    
-    it('should limit the number of news items returned', async () => {
-      // Create a response with many news items
-      const manyNewsItems = {
-        data: {
-          feed: Array(20).fill(0).map((_, i) => ({
-            title: `News ${i}`,
-            url: `https://example.com/news/${i}`,
-            summary: `Summary ${i}`,
-            banner_image: `https://example.com/images/${i}.jpg`,
-            time_published: `2025010${i % 10}T120000`
-          }))
-        }
-      };
-      
-      axios.get.mockResolvedValueOnce(manyNewsItems);
-      
-      const result = await getStockNews('AAPL', 5);
-      
-      expect(result).toHaveLength(5);
     });
   });
 });

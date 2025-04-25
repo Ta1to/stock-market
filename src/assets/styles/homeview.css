@@ -1,9 +1,17 @@
+/**
+ * HomeView CSS Styles
+ * Styling for the main home page of the StockPoker application
+ * Includes responsive layouts, cards, buttons and modals
+ */
+
+/* Base page styles */
 html, body {
   height: 100%;
   margin: 0; 
   overflow-x: hidden;
 }
 
+/* Color and style variables - consider consolidating with common.css */
 :root {
     --bg-dark-primary: #0f0f1a;
     --bg-dark-secondary: #1c1c2e;
@@ -17,7 +25,8 @@ html, body {
     --laptop: 1024px;
   }
   
-  .home-container {
+/* Main container layout */  
+.home-container {
     position: relative;
     padding: clamp(1rem, 3vw, 2.5rem);;
     width: 95%;
@@ -33,19 +42,33 @@ html, body {
     min-height: 100vh;
     width: 100%;
     position: relative;
-    background: 
-      radial-gradient(circle at center, rgba(255, 215, 0, 0.1) 0%, transparent 70%),
-      url('../images/poker.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
+    background-color: var(--bg-dark-primary);
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    padding-top: clamp(2rem, 5vh, 4rem); 
+    padding-top: clamp(2rem, 5vh, 4rem);
+    position: relative; /* Duplicate - consider removing */
+    overflow: hidden;
   }
-  .title {
+  
+/* Background image for main wrapper */
+.main-wrapper::after {
+    content: '';
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 40%;
+    height: 40%;
+    background-image: url('../images/stockpoker.png');
+    background-size: contain;
+    background-position: bottom right;
+    background-repeat: no-repeat;
+    opacity: 0.3;
+    z-index: 0;
+  }
+  
+/* Title and header elements */
+.title {
     font-size: clamp(2rem, 5vw, 4rem);
     font-weight: 900;
     text-align: center;
@@ -60,7 +83,8 @@ html, body {
     margin-left: 2rem; 
   }
   
-  .game-options {
+/* Game options and navigation buttons */
+.game-options {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -68,7 +92,8 @@ html, body {
     margin-bottom: 2rem;
   }
   
-  .btn {
+/* Button styles */  
+.btn {
     padding: 1rem 2.5rem;
     border: none;
     border-radius: 15px;
@@ -81,7 +106,7 @@ html, body {
     overflow: hidden;
   }
   
-  .btn::before {
+.btn::before {
     content: '';
     position: absolute;
     top: 0;
@@ -92,23 +117,24 @@ html, body {
     transition: all 0.4s ease;
   }
   
-  .btn:hover::before {
+.btn:hover::before {
     left: 100%;
   }
   
-  .btn.primary {
+.btn.primary {
     background: var(--btn-gradient-primary);
     color: var(--bg-dark-primary);
     box-shadow: 0 10px 20px rgba(255, 102, 0, 0.3);
   }
   
-  .btn.secondary {
+.btn.secondary {
     background: var(--btn-gradient-secondary);
     color: var(--text-light);
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
   }
   
-  .toggle-container {
+/* Toggle switch for filtering game view */
+.toggle-container {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -116,18 +142,18 @@ html, body {
     margin-bottom: 2.5rem;
   }
   
-  .toggle-container span {
+.toggle-container span {
     color: rgba(255,255,255,0.6);
     transition: color 0.3s ease;
     font-weight: 600;
   }
   
-  .toggle-container .active {
+.toggle-container .active {
     color: var(--accent-gold);
     text-shadow: 0 0 10px var(--accent-gold-transparent);
   }
   
-  .toggle-switch {
+.toggle-switch {
     width: 70px;
     height: 35px;
     background: linear-gradient(135deg, #2c2c3e, #1a1a2e);
@@ -137,7 +163,7 @@ html, body {
     box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
   }
   
-  .toggle-slider {
+.toggle-slider {
     width: 30px;
     height: 30px;
     background: linear-gradient(135deg, #ffd700, #ffcc00);
@@ -150,18 +176,19 @@ html, body {
     box-shadow: 0 3px 10px rgba(255, 215, 0, 0.5);
   }
   
-  .toggle-slider.right {
+.toggle-slider.right {
     left: calc(100% - 33px);
   }
   
-  .game-grid {
+/* Game grid and card layout */
+.game-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
     
   }
   
-  .game-card {
+.game-card {
     background: linear-gradient(145deg, #16213e, #0f0f1a);
     padding: 2rem;
     border-radius: 15px;
@@ -178,7 +205,7 @@ html, body {
     min-height: 200px;
   }
   
-  .game-card::before {
+.game-card::before {
     content: '';
     position: absolute;
     top: -50%;
@@ -190,7 +217,7 @@ html, body {
     z-index: 1;
   }
   
-  .game-card:hover {
+.game-card:hover {
     transform: translateY(-10px) scale(1.03);
     box-shadow: 
       0 15px 40px rgba(0, 0, 0, 0.4),
@@ -212,6 +239,7 @@ html, body {
     margin-bottom: 0.5rem;
   }
   
+/* Join button styles */
 .join-button {
     background: linear-gradient(135deg, #4facfe, #00f2fe);
     color: white;
@@ -230,12 +258,13 @@ html, body {
     padding: clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem);
   }
   
-  .join-button:hover {
+.join-button:hover {
     transform: translateY(-5px);
     box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
   }
   
-  .modal-overlay {
+/* Modal overlay and container */
+.modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -249,7 +278,7 @@ html, body {
     z-index: 1000;
   }
   
-  .modal {
+.modal {
     background: linear-gradient(145deg, rgba(26, 26, 46, 0.9), rgba(22, 33, 62, 0.9));
     padding: 3rem;
     border-radius: 20px;
@@ -262,7 +291,7 @@ html, body {
     overflow: hidden;
   }
   
-  .modal input {
+.modal input {
     width: 100%;
     padding: 1rem;
     background: rgba(255, 255, 255, 0.1);
@@ -273,13 +302,14 @@ html, body {
     transition: all 0.3s ease;
   }
   
-  .modal input:focus {
+.modal input:focus {
     outline: none;
     border-color: var(--accent-gold);
     box-shadow: 0 0 15px var(--accent-gold-transparent);
   }
 
-  .public-games-container {
+/* Public games list container */
+.public-games-container {
     max-height: calc(60vh - clamp(2rem, 5vh, 4rem)); 
     overflow-y: auto;
     padding: 0 20px;
@@ -290,21 +320,23 @@ html, body {
     scrollbar-color: var(--accent-gold) rgba(255, 255, 255, 0.1);
   }
 
-  .public-games-container::-webkit-scrollbar {
+/* Custom scrollbar styles */
+.public-games-container::-webkit-scrollbar {
     width: 8px;
   }
   
-  .public-games-container::-webkit-scrollbar-track {
+.public-games-container::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
   }
   
-  .public-games-container::-webkit-scrollbar-thumb {
+.public-games-container::-webkit-scrollbar-thumb {
     background: var(--accent-gold);
     border-radius: 10px;
   }
 
-  @media (max-width: 768px) {
+/* Responsive styles - Tablet */
+@media (max-width: 768px) {
     .public-games-container {
       max-height: calc(50vh - clamp(2rem, 4vh, 3rem));
       padding-bottom: clamp(1.25rem, 3vh, 2.5rem);
@@ -365,7 +397,8 @@ html, body {
     }
   }
   
-  @media (max-width: 480px) {
+/* Responsive styles - Mobile */
+@media (max-width: 480px) {
     .public-games-container {
       max-height: calc(40vh - clamp(1rem, 3vh, 2rem));
       padding: 0 10px;
@@ -411,7 +444,8 @@ html, body {
   }
 
 
-  @media (hover: none) {
+/* Touch device optimizations */
+@media (hover: none) {
     .game-card:hover {
       transform: none;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3),
@@ -431,7 +465,8 @@ html, body {
     }
   }
 
-  @media (max-height: 600px) and (orientation: landscape) {
+/* Landscape mode adjustments */
+@media (max-height: 600px) and (orientation: landscape) {
     .home-container {
       margin: 10px auto;
     }
@@ -454,7 +489,8 @@ html, body {
     }
   }
 
-  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+/* High-DPI screen optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
     .main-wrapper {
       background-size: cover;
     }

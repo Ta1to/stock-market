@@ -5,8 +5,7 @@
       
       <div class="text-center header-section">
         <div class="logo-container">
-          <i class="icon chart-line-icon"></i>
-          <span class="register-logo">Stock Poker</span>
+          <img src="/stockpoker.png" alt="Stock Poker Logo" class="app-logo" />
         </div>
         
         <h1 class="card-title">Create Account</h1>
@@ -248,11 +247,18 @@ export default {
   margin-bottom: 32px;
 }
 
+.app-logo {
+  width: 180px;
+  height: 180px;
+  display: block;
+  margin: 0 auto;
+}
+
 .logo-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 30px;
 }
 
 .icon {
@@ -262,12 +268,6 @@ export default {
   background-size: contain;
   background-repeat: no-repeat;
   display: inline-block;
-}
-
-.chart-line-icon {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffd700'%3E%3Cpath d='M3,12H7V21H3V12M9,8H13V21H9V8M15,3H19V21H15V3Z'/%3E%3C/svg%3E");
-  width: 48px;
-  height: 48px;
 }
 
 .email-icon {

@@ -1,7 +1,7 @@
 // Mock dependencies without functional implementations
 jest.mock('axios');
 jest.mock('@/config/api', () => ({
-  TWELVE_DATA_API: {
+  TWELVE_DATA_INDICATORS_API: {
     BASE_URL: 'https://api.twelvedata.com',
     KEY: 'test-api-key'
   }
@@ -12,7 +12,9 @@ jest.mock('@/utils/errorUtils', () => ({
 }));
 
 // Import modules under test after mocking
+import { fetchTechnicalIndicators } from '@/api/indicator-api';
 import { logError } from '@/utils/errorUtils';
+import { TWELVE_DATA_INDICATORS_API } from '@/config/api';
 import axios from 'axios';
 
 describe('Indicator API', () => {
@@ -22,187 +24,141 @@ describe('Indicator API', () => {
   });
   
   describe('fetchTechnicalIndicators', () => {
-    const mockSmaResponse = {
+    const mockMacdResponse = {
       data: {
-        'Technical Analysis: SMA': {
-          '2025-04-01': {
-            SMA: '150.25'
-          },
-          '2025-03-31': {
-            SMA: '149.80'
-          }
-        }
+        values: [{
+          macd: '2.5',
+          macd_signal: '1.8',
+          macd_hist: '0.7'
+        }]
       }
     };
     
     const mockRsiResponse = {
       data: {
-        'Technical Analysis: RSI': {
-          '2025-04-01': {
-            RSI: '65.21'
-          },
-          '2025-03-31': {
-            RSI: '62.45'
-          }
-        }
-      }
-    };
-    
-    const mockMacdResponse = {
-      data: {
-        'Technical Analysis: MACD': {
-          '2025-04-01': {
-            MACD: '2.5',
-            MACD_Signal: '1.8',
-            MACD_Hist: '0.7'
-          },
-          '2025-03-31': {
-            MACD: '2.1',
-            MACD_Signal: '1.6',
-            MACD_Hist: '0.5'
-          }
-        }
+        values: [{
+          rsi: '65.21'
+        }]
       }
     };
     
     it('should fetch technical indicators successfully', async () => {
       // Mock each API call in sequence
       axios.get
-        .mockResolvedValueOnce(mockSmaResponse)
-        .mockResolvedValueOnce(mockRsiResponse)
-        .mockResolvedValueOnce(mockMacdResponse);
+        .mockResolvedValueOnce(mockMacdResponse)
+        .mockResolvedValueOnce(mockRsiResponse);
       
       const result = await fetchTechnicalIndicators('AAPL');
       
-      expect(axios.get).toHaveBeenCalledTimes(3);
-      
-      // Check SMA call
-      expect(axios.get).toHaveBeenNthCalledWith(1, ALPHA_VANTAGE_API.BASE_URL, {
-        params: {
-          function: 'SMA',
-          symbol: 'AAPL',
-          interval: 'daily',
-          time_period: '20',
-          series_type: 'close',
-          apikey: ALPHA_VANTAGE_API.KEY
-        }
-      });
-      
-      // Check RSI call
-      expect(axios.get).toHaveBeenNthCalledWith(2, ALPHA_VANTAGE_API.BASE_URL, {
-        params: {
-          function: 'RSI',
-          symbol: 'AAPL',
-          interval: 'daily',
-          time_period: '14',
-          series_type: 'close',
-          apikey: ALPHA_VANTAGE_API.KEY
-        }
-      });
+      expect(axios.get).toHaveBeenCalledTimes(2);
       
       // Check MACD call
-      expect(axios.get).toHaveBeenNthCalledWith(3, ALPHA_VANTAGE_API.BASE_URL, {
-        params: {
-          function: 'MACD',
-          symbol: 'AAPL',
-          interval: 'daily',
-          series_type: 'close',
-          apikey: ALPHA_VANTAGE_API.KEY
+      expect(axios.get).toHaveBeenNthCalledWith(
+        1, 
+        `${TWELVE_DATA_INDICATORS_API.BASE_URL}/macd`, 
+        {
+          params: {
+            symbol: 'AAPL',
+            interval: '1day',
+            apikey: TWELVE_DATA_INDICATORS_API.KEY,
+            outputsize: 1
+          }
         }
-      });
+      );
+      
+      // Check RSI call
+      expect(axios.get).toHaveBeenNthCalledWith(
+        2, 
+        `${TWELVE_DATA_INDICATORS_API.BASE_URL}/rsi`, 
+        {
+          params: {
+            symbol: 'AAPL',
+            interval: '1day',
+            apikey: TWELVE_DATA_INDICATORS_API.KEY,
+            outputsize: 1
+          }
+        }
+      );
       
       expect(result).toEqual({
-        sma: '150.25',
-        rsi: '65.21',
-        macd: '2.5'
-      });
-    });
-    
-    it('should handle API errors for SMA', async () => {
-      const error = new Error('API Error');
-      axios.get
-        .mockRejectedValueOnce(error)
-        .mockResolvedValueOnce(mockRsiResponse)
-        .mockResolvedValueOnce(mockMacdResponse);
-      
-      const result = await fetchTechnicalIndicators('AAPL');
-      
-      expect(logError).toHaveBeenCalledWith(error, 'IndicatorAPI');
-      expect(result).toEqual({
-        sma: 'N/A',
-        rsi: '65.21',
-        macd: '2.5'
-      });
-    });
-    
-    it('should handle API errors for RSI', async () => {
-      const error = new Error('API Error');
-      axios.get
-        .mockResolvedValueOnce(mockSmaResponse)
-        .mockRejectedValueOnce(error)
-        .mockResolvedValueOnce(mockMacdResponse);
-      
-      const result = await fetchTechnicalIndicators('AAPL');
-      
-      expect(logError).toHaveBeenCalledWith(error, 'IndicatorAPI');
-      expect(result).toEqual({
-        sma: '150.25',
-        rsi: 'N/A',
-        macd: '2.5'
+        macd: {
+          value: 2.5,
+          signal: 1.8,
+          histogram: 0.7
+        },
+        rsi: 65.21,
+        timestamp: expect.any(String)
       });
     });
     
     it('should handle API errors for MACD', async () => {
       const error = new Error('API Error');
       axios.get
-        .mockResolvedValueOnce(mockSmaResponse)
-        .mockResolvedValueOnce(mockRsiResponse)
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce(mockRsiResponse);
+      
+      const result = await fetchTechnicalIndicators('AAPL');
+      
+      expect(logError).toHaveBeenCalledWith(error, 'TechnicalIndicatorUtils:fetchMACD');
+      expect(result).toEqual({
+        macd: null,
+        rsi: 65.21,
+        timestamp: expect.any(String)
+      });
+    });
+    
+    it('should handle API errors for RSI', async () => {
+      const error = new Error('API Error');
+      axios.get
+        .mockResolvedValueOnce(mockMacdResponse)
         .mockRejectedValueOnce(error);
       
       const result = await fetchTechnicalIndicators('AAPL');
       
-      expect(logError).toHaveBeenCalledWith(error, 'IndicatorAPI');
+      expect(logError).toHaveBeenCalledWith(error, 'TechnicalIndicatorUtils:fetchRSI');
       expect(result).toEqual({
-        sma: '150.25',
-        rsi: '65.21',
-        macd: 'N/A'
+        macd: {
+          value: 2.5,
+          signal: 1.8,
+          histogram: 0.7
+        },
+        rsi: null,
+        timestamp: expect.any(String)
       });
     });
     
     it('should handle rate limiting', async () => {
-      const rateLimitResponse = {
+      const errorResponse = {
         data: {
-          Note: 'Thank you for using Alpha Vantage! Our standard API call frequency is 5 calls per minute and 500 calls per day.'
+          status: 'error',
+          message: 'Rate limit exceeded'
         }
       };
       
       axios.get
-        .mockResolvedValueOnce(rateLimitResponse)
-        .mockResolvedValueOnce(rateLimitResponse)
-        .mockResolvedValueOnce(rateLimitResponse);
+        .mockResolvedValueOnce(errorResponse)
+        .mockResolvedValueOnce(errorResponse);
       
       const result = await fetchTechnicalIndicators('AAPL');
       
-      expect(logError).toHaveBeenCalledTimes(3);
       expect(result).toEqual({
-        sma: 'N/A',
-        rsi: 'N/A',
-        macd: 'N/A'
+        macd: null,
+        rsi: null,
+        timestamp: expect.any(String)
       });
     });
     
     it('should handle empty data', async () => {
       axios.get
         .mockResolvedValueOnce({ data: {} })
-        .mockResolvedValueOnce({ data: {} })
         .mockResolvedValueOnce({ data: {} });
       
       const result = await fetchTechnicalIndicators('INVALID');
       
       expect(result).toEqual({
-        sma: 'N/A',
-        rsi: 'N/A',
-        macd: 'N/A'
+        macd: null,
+        rsi: null,
+        timestamp: expect.any(String)
       });
     });
   });

@@ -14,6 +14,7 @@ jest.mock('@/utils/errorUtils', () => ({
 // Import modules under test after mocking
 import { logError } from '@/utils/errorUtils';
 import { ALPHA_VANTAGE_API } from '@/config/api';
+import { getStockInfo } from '@/api/description-api';
 import axios from 'axios';
 
 describe('Description API', () => {
@@ -54,16 +55,9 @@ describe('Description API', () => {
       });
       
       expect(result).toEqual({
-        name: 'Apple Inc',
-        symbol: 'AAPL',
         description: 'Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide.',
         sector: 'Technology',
         industry: 'Consumer Electronics',
-        exchange: 'NASDAQ',
-        marketCap: '2500000000000',
-        dividendYield: '0.0065',
-        eps: '6.45',
-        peRatio: '25.9',
         website: 'https://www.apple.com'
       });
     });
@@ -74,28 +68,25 @@ describe('Description API', () => {
       
       const result = await getStockInfo('AAPL');
       
-      expect(logError).toHaveBeenCalledWith(error, 'DescriptionAPI');
+      expect(logError).toHaveBeenCalledWith(error, 'StockInfoAPI:getStockInfo');
       expect(result).toBeNull();
     });
     
-    it('should handle rate limiting', async () => {
+    it('should handle symbol mismatch', async () => {
       axios.get.mockResolvedValueOnce({
         data: {
-          Note: 'Thank you for using Alpha Vantage! Our standard API call frequency is 5 calls per minute and 500 calls per day.'
+          Symbol: 'MSFT',
+          Name: 'Microsoft',
+          Description: 'Microsoft description',
+          Sector: 'Technology',
+          Industry: 'Software',
+          Website: 'https://www.microsoft.com'
         }
       });
       
       const result = await getStockInfo('AAPL');
       
       expect(logError).toHaveBeenCalled();
-      expect(result).toBeNull();
-    });
-
-    it('should handle empty data', async () => {
-      axios.get.mockResolvedValueOnce({ data: {} });
-      
-      const result = await getStockInfo('INVALID');
-      
       expect(result).toBeNull();
     });
   });

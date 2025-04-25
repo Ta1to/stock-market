@@ -1,3 +1,7 @@
+/**
+ * Vue Router Configuration
+ * Defines application routes, navigation guards, and authentication requirements
+ */
 import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
 import LoginView from '../views/auth/LoginView.vue';
@@ -7,6 +11,11 @@ import GameView from '../views/GameView.vue';
 import app from "../api/firebase-api";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
+/**
+ * Route definitions with meta information for authentication requirements
+ * requiresAuth: true - Route requires user to be logged in
+ * requiresAuth: false - Route is accessible without authentication
+ */
 const routes = [
   {
     path: '/',
@@ -40,11 +49,19 @@ const routes = [
   }
 ];
 
+/**
+ * Initialize router with HTML5 history mode
+ * This enables cleaner URLs without the hash (#)
+ */
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
   routes
 });
 
+/**
+ * Navigation guard to handle authentication
+ * Redirects unauthenticated users to login page when trying to access protected routes
+ */
 router.beforeEach((to, from, next) => {
   const auth = getAuth(app);
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);

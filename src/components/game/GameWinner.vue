@@ -14,32 +14,44 @@
         <div class="podium-container">
           <!-- Second place -->
           <div class="podium-place second-place" v-if="sortedPlayers.length > 1">
-            <div class="player-avatar">
-              <span class="player-initial">{{ getInitial(sortedPlayers[1].name) }}</span>
+            <div class="player-info">
+              <div class="player-avatar">
+                <span class="player-initial">{{ getInitial(sortedPlayers[1].name) }}</span>
+              </div>
+              <div class="player-details">
+                <div class="player-name" :title="sortedPlayers[1].name">{{ sortedPlayers[1].name }}</div>
+                <div class="player-chips">{{ sortedPlayers[1].chips }} chips</div>
+              </div>
             </div>
-            <div class="player-name">{{ sortedPlayers[1].name }}</div>
-            <div class="player-chips">{{ sortedPlayers[1].chips }} chips</div>
             <div class="podium-block second">2</div>
           </div>
           
           <!-- First place (winner) -->
           <div class="podium-place first-place">
             <div class="winner-crown">👑</div>
-            <div class="player-avatar winner">
-              <span class="player-initial">{{ getInitial(sortedPlayers[0].name) }}</span>
+            <div class="player-info">
+              <div class="player-avatar winner">
+                <span class="player-initial">{{ getInitial(sortedPlayers[0].name) }}</span>
+              </div>
+              <div class="player-details">
+                <div class="player-name" :title="sortedPlayers[0].name">{{ sortedPlayers[0].name }}</div>
+                <div class="player-chips">{{ sortedPlayers[0].chips }} chips</div>
+              </div>
             </div>
-            <div class="player-name">{{ sortedPlayers[0].name }}</div>
-            <div class="player-chips">{{ sortedPlayers[0].chips }} chips</div>
             <div class="podium-block first">1</div>
           </div>
           
           <!-- Third place -->
           <div class="podium-place third-place" v-if="sortedPlayers.length > 2">
-            <div class="player-avatar">
-              <span class="player-initial">{{ getInitial(sortedPlayers[2].name) }}</span>
+            <div class="player-info">
+              <div class="player-avatar">
+                <span class="player-initial">{{ getInitial(sortedPlayers[2].name) }}</span>
+              </div>
+              <div class="player-details">
+                <div class="player-name" :title="sortedPlayers[2].name">{{ sortedPlayers[2].name }}</div>
+                <div class="player-chips">{{ sortedPlayers[2].chips }} chips</div>
+              </div>
             </div>
-            <div class="player-name">{{ sortedPlayers[2].name }}</div>
-            <div class="player-chips">{{ sortedPlayers[2].chips }} chips</div>
             <div class="podium-block third">3</div>
           </div>
         </div>
@@ -261,6 +273,21 @@ export default {
   height: 60px;
 }
 
+.player-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.player-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
 .player-avatar {
   width: 60px;
   height: 60px;
@@ -269,9 +296,8 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 8px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  margin-bottom: 50px;
+  margin-bottom: 15px;
   border: 2px solid #344675;
 }
 
@@ -305,8 +331,6 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100px;
-  position: absolute;
-  bottom: 140px;
 }
 
 .player-chips {
@@ -315,8 +339,6 @@ export default {
   background: rgba(0, 0, 0, 0.3);
   padding: 3px 8px;
   border-radius: 10px;
-  position: absolute;
-  bottom: 120px;
 }
 
 .first-place .player-chips {
@@ -448,7 +470,7 @@ export default {
   .player-avatar {
     width: 50px;
     height: 50px;
-    margin-bottom: 40px;
+    margin-bottom: 10px;
   }
   
   .player-initial {
@@ -458,18 +480,21 @@ export default {
   .player-name {
     font-size: 0.9rem;
     max-width: 80px;
-    bottom: 115px;
   }
   
   .player-chips {
     font-size: 0.8rem;
-    bottom: 95px;
   }
 }
 
 @media (max-width: 480px) {
+  .game-winner-container {
+    padding: 1.5rem 1rem;
+  }
+
   .podium-container {
     height: 200px;
+    margin: 1rem 0;
   }
   
   .podium-block {
@@ -491,7 +516,7 @@ export default {
   .player-avatar {
     width: 40px;
     height: 40px;
-    margin-bottom: 30px;
+    margin-bottom: 8px;
   }
   
   .player-initial {
@@ -501,16 +526,19 @@ export default {
   .player-name {
     font-size: 0.8rem;
     max-width: 60px;
-    bottom: 90px;
   }
   
   .player-chips {
     font-size: 0.7rem;
-    bottom: 75px;
   }
   
   .winner-title {
     font-size: 1.8rem;
+  }
+
+  .winner-message {
+    font-size: 1rem;
+    margin: 1rem 0;
   }
 }
 </style>

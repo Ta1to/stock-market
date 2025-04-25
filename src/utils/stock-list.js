@@ -1,7 +1,11 @@
 /* eslint-disable */
 
-/* eslint-disable */
-
+/**
+ * Stock List
+ * A curated list of major publicly traded companies available for trading
+ * Contains company name, stock symbol, and ISIN (International Securities Identification Number)
+ * Used for stock selection in the game and API requests
+ */
 export const stockList = [
     { name: 'Apple', symbol: 'AAPL', ISIN: 'US0378331005' },
     { name: 'Google', symbol: 'GOOGL', ISIN: 'US02079K3059' },
@@ -48,5 +52,6 @@ export const stockList = [
     { name: 'Boeing', symbol: 'BA', ISIN: 'US0970231058' }
 ];
 
-globalThis.stockList = stockList; // Attach to global object
+// Make the stock list available globally for development and debugging purposes
+globalThis.stockList = stockList;
 

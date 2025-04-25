@@ -1,7 +1,17 @@
 import { db } from "../api/firebase-api";
 import { ref, set, get, update, remove } from "firebase/database";
 
-// Store data in the RealTime Database
+/**
+ * Firebase Realtime Database service
+ * Provides CRUD operations for interacting with the database
+ */
+
+/**
+ * Stores data in the Firebase Realtime Database
+ * @param {string} path - Database path where data should be stored
+ * @param {object} data - Data to store
+ * @returns {Promise<void>}
+ */
 export const writeData = async (path, data) => {
   try {
     await set(ref(db, path), data);
@@ -11,7 +21,11 @@ export const writeData = async (path, data) => {
   }
 };
 
-// Read data from the Realtime Database
+/**
+ * Reads data from the Firebase Realtime Database
+ * @param {string} path - Database path to read from
+ * @returns {Promise<object|null>} Data object or null if not found
+ */
 export const readData = async (path) => {
   try {
     const snapshot = await get(ref(db, path));
@@ -27,7 +41,13 @@ export const readData = async (path) => {
   }
 };
 
-// Update data from the Realtime Database
+/**
+ * Updates data in the Firebase Realtime Database
+ * Only updates the specified fields, preserving the rest
+ * @param {string} path - Database path to update
+ * @param {object} data - Object containing the fields to update
+ * @returns {Promise<void>}
+ */
 export const updateData = async (path, data) => {
   try {
     await update(ref(db, path), data);
@@ -37,7 +57,11 @@ export const updateData = async (path, data) => {
   }
 };
 
-// Delete data from the Realtime Database
+/**
+ * Deletes data from the Firebase Realtime Database
+ * @param {string} path - Database path to delete
+ * @returns {Promise<void>}
+ */
 export const deleteData = async (path) => {
   try {
     await remove(ref(db, path));

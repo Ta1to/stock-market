@@ -1,3 +1,13 @@
+/**
+ * Utility functions for stock data processing and chart configuration
+ */
+
+/**
+ * Limits stock data for display by removing the most recent entries
+ * Used to hide the actual future price movement from players during prediction
+ * @param {Object} stockData - Object containing dates and prices arrays
+ * @returns {Object|null} - Limited stock data or null if input is invalid
+ */
 export const getLimitedStockData = (stockData) => {
     if (!stockData?.dates || !stockData?.prices) return null;
         const cuttoffIndexDate = -2; 
@@ -8,8 +18,13 @@ export const getLimitedStockData = (stockData) => {
     };
   };
 
-  
-  export const getChartConfig = (darkMode = true) => ({
+/**
+ * Returns chart.js configuration with appropriate styling
+ * Configures responsive behavior, animations, and dark/light mode styling
+ * @param {boolean} darkMode - Whether to use dark mode styling
+ * @returns {Object} - Chart.js configuration object
+ */  
+export const getChartConfig = (darkMode = true) => ({
     responsive: true,
     maintainAspectRatio: false,
     animation: {

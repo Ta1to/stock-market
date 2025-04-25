@@ -36,7 +36,7 @@ describe('LogoutButton.vue', () => {
     });
     
     expect(wrapper.find('.logout-button').exists()).toBe(true);
-    expect(wrapper.text()).toBe('Logout');
+    expect(wrapper.text()).toBe('LOGOUT');
   });
   
   it('calls logout method when button is clicked', async () => {

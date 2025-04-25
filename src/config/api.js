@@ -4,31 +4,46 @@
  * Uses environment variables for sensitive information
  */
 
-// Stock API configs
+/**
+ * Stock data API configuration for Twelve Data
+ * Used for fetching stock prices and time series data
+ */
 export const TWELVE_DATA_API = {
   BASE_URL: 'https://api.twelvedata.com',
   KEY: process.env.VUE_APP_TWELVE_DATA_API_KEY
 };
 
-// Twelve Data Indicators API config
+/**
+ * Technical indicators API configuration for Twelve Data
+ * Used for fetching MACD, RSI and other technical indicators
+ */
 export const TWELVE_DATA_INDICATORS_API = {
   BASE_URL: 'https://api.twelvedata.com',
   KEY: process.env.VUE_APP_TWELVE_DATA_INDICATORS_API_KEY 
 };
 
-// Alpha Vantage API configs
+/**
+ * Alpha Vantage API configuration
+ * Used for fetching additional market data and company information
+ */
 export const ALPHA_VANTAGE_API = {
   BASE_URL: 'https://www.alphavantage.co/query',
   KEY: process.env.VUE_APP_ALPHA_VANTAGE_API_KEY
 };
 
-//Marketaux API configs
+/**
+ * Marketaux API configuration
+ * Used for fetching financial news and market sentiment data
+ */
 export const MARKETAUX_API = {
   BASE_URL: 'https://api.marketaux.com/v1/news/all',
   KEY: process.env.VUE_APP_MARKETAUX_APIKEY
 };
 
-// Firebase configs
+/**
+ * Firebase configuration
+ * Used for authentication, database, and hosting services
+ */
 export const FIREBASE_CONFIG = {
   apiKey: process.env.VUE_APP_FIREBASE_API_KEY,
   authDomain: process.env.VUE_APP_FIREBASE_AUTH_DOMAIN,

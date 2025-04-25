@@ -1,6 +1,11 @@
+/**
+ * Game State Management
+ * Handles all game-related state and business logic using Pinia store
+ * Provides reactivity, persistence, and synchronization with Firebase
+ */
 import { defineStore } from 'pinia';
 
-// Import your service functions
+// Import database functions for game state persistence
 import {
   subscribeToGameData,
   createGame,
@@ -15,16 +20,20 @@ import {
   updatePot,
   addLogEntry as dbAddLogEntry,
   getPlayerBet as dbGetPlayerBet,
-  updateData, // NEW: Import the updateData function to initialize round structure in DB
+  updateData, // Used to initialize round structure in database
 } from './game-database';
 
 
 export const useGameStore = defineStore('game', {
+  /**
+   * State contains all reactive game data
+   * All properties are synchronized with Firebase
+   */
   state: () => ({
     currentRound: 1,
     currentPhase: 1,
     totalRounds: 3,
-    totalPhases: 10,  // Updated from 9 to 10 to include the winner announcement phase
+    totalPhases: 10,  // Includes winner announcement phase
 
     // Store the ID of the current game
     gameId: null,
@@ -41,19 +50,25 @@ export const useGameStore = defineStore('game', {
 
     unsubscribers: [],
 
-    // This identifies the player whose turn it is (initially set to 0 => player 1)
+    // Identifies the player whose turn it is (initially set to 0 => player 1)
     currentTurnIndex: 0,
-    errorMessage: null, // added property to hold error messages
-    selectedStock: null, // new property for the selected stock of the round
+    errorMessage: null, // Holds error messages for UI display
+    selectedStock: null, // Selected stock symbol for the current round
   }),
 
   getters: {
+    /**
+     * Determines if the game has reached its conclusion
+     * @returns {boolean} True if all rounds have been completed
+     */
     isGameComplete: (state) => state.currentRound > state.totalRounds,
   },
 
   actions: {
     /**
-     * Subscribe to the realtime data for this game
+     * Subscribe to the realtime data for this game from Firebase
+     * Updates local state whenever remote data changes
+     * @param {string} gameId - Unique identifier for the game
      */
     async subscribeToGame(gameId) {
       this.gameId = gameId;
@@ -98,7 +113,8 @@ export const useGameStore = defineStore('game', {
     },
 
     /**
-     * Stop listening to game updates
+     * Stop listening to game updates and clean up subscriptions
+     * Should be called when leaving a game or component unmounts
      */
     unsubscribeFromGame() {
       this.unsubscribers.forEach((fn) => fn());
@@ -106,14 +122,18 @@ export const useGameStore = defineStore('game', {
     },
 
     /**
-     * Create/initialize a new game in DB
+     * Create and initialize a new game in database
+     * @param {string} gameId - Unique identifier for the new game
+     * @param {object} initialData - Initial game configuration data
      */
     async createGameInDB(gameId, initialData = {}) {
       await createGame(gameId, initialData);
     },
 
     /**
-     * Move to the next phase or round
+     * Advances the game to the next phase or round
+     * Handles phase transitions and round boundaries
+     * Updates both local state and database
      */
     async nextPhase() {
       if (!this.gameId) return;
@@ -156,6 +176,10 @@ export const useGameStore = defineStore('game', {
       console.log(`Updated state: round ${this.currentRound}, phase ${this.currentPhase}.`);
     },
 
+    /**
+     * Initiates the stock selection phase for a round
+     * @param {string} gameId - Unique identifier for the game
+     */
     async startStockSelection(gameId) {
       if (!this.gameId) return;
       
@@ -171,7 +195,9 @@ export const useGameStore = defineStore('game', {
     },
 
     /**
-     * Player sets a prediction
+     * Records a player's price prediction for the current round
+     * @param {string} playerId - Unique identifier for the player
+     * @param {number} price - The player's predicted price
      */
     async setPlayerPrediction(playerId, price) {
       if (!this.gameId) return;
@@ -199,8 +225,12 @@ export const useGameStore = defineStore('game', {
     },
       
 
+
     /**
-     * Player places a bet
+     * Player places a bet in the current betting phase
+     * Updates player chips, pot, and highest bet
+     * @param {string} playerId - Unique identifier for the player
+     * @param {number} amount - Bet amount in chips
      */
     async placeBet(playerId, amount) {
       if (!this.gameId) return;
@@ -291,7 +321,9 @@ export const useGameStore = defineStore('game', {
     },
     
     /**
-     * Player folds
+     * Player folds during the current betting phase
+     * Removes player from active betting and moves to next player's turn
+     * @param {string} playerId - Unique identifier for the player
      */
     async fold(playerId) {
       if (!this.gameId) return;
@@ -311,6 +343,7 @@ export const useGameStore = defineStore('game', {
     
     /**
      * Check if all players have placed bets or folded
+     * Determines if betting round is complete and handles single player scenarios
      * @returns {Promise<boolean>} True if betting round is complete, false if still ongoing
      */
     async checkBettingStatus() {
@@ -384,6 +417,8 @@ export const useGameStore = defineStore('game', {
 
     /**
      * Move to the next player's turn
+     * Skips players who have folded
+     * Updates both local state and database
      */
     moveToNextTurn() {
       if (!this.players.length) return;
@@ -407,7 +442,8 @@ export const useGameStore = defineStore('game', {
     },
 
     /**
-     * Add a log entry
+     * Add a log entry to the game history
+     * @param {string} message - Log message to record
      */
     async addLogEntry(message) {
       if (!this.gameId) return;
@@ -459,7 +495,11 @@ export const useGameStore = defineStore('game', {
       await updatePot(this.gameId, this.currentRound, 0);
     },
 
-    // New action to set the selected stock for this round
+    /**
+     * Sets the selected stock for the current round
+     * Used during stock selection phase
+     * @param {object} stock - Stock object containing symbol and name
+     */
     setSelectedStock(stock) {
       console.log("setSelectedStock called with:", stock);
       this.selectedStock = stock;
