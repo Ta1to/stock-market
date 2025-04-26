@@ -1,85 +1,106 @@
 // https://docs.cypress.io/api/introduction/api.html
 
+/**
+ * E2E Tests for Home View
+ * Tests user interactions on the main page after login
+ */
 describe('Home View Tests', () => {
-  // Stub Firebase vor jedem Test
+  // Set up authentication before each test
   beforeEach(() => {
-    cy.stubFirebase();
+    // Use the improved login command
     cy.login('tester@gmail.com', '123456');
     
-    // Wir müssen nicht mehr auf Umleitungen warten, da wir die Session verwenden
-    cy.contains('Stock Poker', { timeout: 3000 }).should('be.visible');
+    // Login now guarantees we're on the home page
+    // and the logo is visible, so no additional check needed
   });
 
+  /**
+   * Test to verify all essential UI elements are present
+   */
   it('should display home page elements correctly', () => {
-    // Prüfe alle erwarteten Elemente mit einer effizienteren Abfrage
+    // Check all expected elements with an efficient query
     cy.get('body').within(() => {
-      cy.get('h1').contains('Stock Poker');
       cy.contains('Create Game');
       cy.contains('Join Game');
       cy.contains('Public');
       cy.contains('Private');
-      cy.contains('Öffentliche Spiele');
+      cy.contains('Public Games');
     });
   });
 
+  /**
+   * Test to verify game mode toggle functionality
+   */
   it('should toggle between public and private game modes', () => {
-    // Optimierte Umschaltprüfung mit weniger Assertions
+    // Optimized toggle check with fewer assertions
     cy.contains('span.active', 'Public').should('exist');
     
-    // Einmaliger Klick für Umschaltung
+    // First click for toggling
     cy.get('.toggle-switch').click();
     cy.contains('span.active', 'Private').should('exist');
     
-    // Zweiter Klick für Rückumschaltung
+    // Second click for toggling back
     cy.get('.toggle-switch').click();
     cy.contains('span.active', 'Public').should('exist');
   });
 
+  /**
+   * Test to verify modal behavior for joining games
+   */
   it('should open and close join game modal', () => {
-    // Modal-Test optimiert
+    // Open modal
     cy.contains('Join Game').click();
     
-    // Nur eine Assertion für das Modal
+    // Single assertion for the modal
     cy.get('.modal').should('be.visible')
       .within(() => {
         cy.contains('Join Game');
         cy.get('input[placeholder="Enter game code"]');
       });
     
-    // Modal schließen
+    // Close modal
     cy.contains('Cancel').click();
     cy.get('.modal').should('not.exist');
   });
 
+  /**
+   * Test to verify public games section display
+   */
   it('should display public games section', () => {
     cy.get('.public-games-container').should('be.visible');
     
-    // Einfachere Prüfung ohne Verzweigung
+    // Simpler check without conditional branching
     cy.get('body').then(($body) => {
       if ($body.find('.game-card').length) {
         cy.get('.game-card').first().should('be.visible');
       } else {
-        cy.contains('Keine öffentlichen Spiele verfügbar');
+        cy.contains('No public games available');
       }
     });
   });
 
+  /**
+   * Test to verify game creation and redirection
+   */
   it('should create a new game and redirect to lobby', () => {
-    // Stub für Datenbankaufrufe, um echte Netzwerkanfragen zu vermeiden
+    // Stub for database calls to avoid real network requests
     cy.intercept('POST', '**/firestore.googleapis.com/**', { 
       statusCode: 200,
       body: { name: 'projects/mock/databases/(default)/documents/games/game123' }
     }).as('createGame');
     
-    // Spiel erstellen
+    // Create game
     cy.contains('Create Game').click();
     
-    // Auf Weiterleitung warten, ohne auf Netzwerkanfragen zu warten
+    // Wait for redirection without waiting for network requests
     cy.url().should('include', '/lobby/');
   });
 
+  /**
+   * Test to verify logout functionality
+   */
   it('should log out when clicking logout button', () => {
-    // Optimiertes Logout-Testen
+    // Optimized logout testing
     cy.get('.logout-button').click();
     cy.url().should('include', '/login');
   });

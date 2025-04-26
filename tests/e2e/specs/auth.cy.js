@@ -11,7 +11,7 @@ describe('Authentication Tests', () => {
 
     it('should display the login page with all elements', () => {
       // Check if all expected elements are present on the login page
-      cy.contains('Stock Poker').should('be.visible')
+      cy.get('img[src="/stockpoker.png"]').should('be.visible')
       cy.get('input[type="email"]').should('be.visible')
       cy.get('input[type="password"]').should('be.visible')
       cy.contains('button', 'Sign In').should('be.visible')
@@ -84,7 +84,7 @@ describe('Authentication Tests', () => {
   describe('Registration Flow', () => {
     beforeEach(() => {
       // Visit registration page before each test
-      cy.visit('/')
+      cy.visit('/login')
       cy.contains('Sign up').click()
       
       // Check if we are redirected to registration page
@@ -94,7 +94,7 @@ describe('Authentication Tests', () => {
 
     it('should display the registration page with all elements', () => {
       // Check if all expected elements are present on the registration page
-      cy.contains('Stock Poker').should('be.visible')
+      cy.get('img[src="/stockpoker.png"]').should('be.visible')
       cy.get('input[placeholder*="Full Name"], input[label="Full Name"]').should('be.visible')
       cy.get('input[type="email"]').should('be.visible')
       cy.get('input[type="password"]').should('be.visible')
