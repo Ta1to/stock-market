@@ -39,7 +39,7 @@ describe('Lobby Tests', () => {
     }).as('deleteGame');
     
     // Clean up by deleting game after each test
-    cy.contains('Delete Game').click();
+    cy.contains('Spiel löschen').click();
     cy.url().should('not.include', '/lobby/', { timeout: 5000 });
   });
 
@@ -64,8 +64,8 @@ describe('Lobby Tests', () => {
   it('should display creator-specific elements when user is creator', () => {   
     // Check for creator-only controls
     cy.get('.visibility-toggle').should('exist');
-    cy.get('.start-button').should('be.visible').and('contain', 'Start Game');
-    cy.get('.delete-button').should('be.visible').and('contain', 'Delete Game');
+    cy.get('.start-button').should('be.visible').and('contain', 'Spiel starten');
+    cy.get('.delete-button').should('be.visible').and('contain', 'Spiel löschen');
     cy.get('.leave-button').should('not.exist');
   });
 
@@ -83,15 +83,15 @@ describe('Lobby Tests', () => {
     cy.get('.toggle-switch').should('exist');
     
     // Check initial state (Public active)
-    cy.contains('.visibility-toggle span:not(.active)', 'Private').should('exist');
-    cy.contains('.visibility-toggle span.active', 'Public').should('exist');
+    cy.contains('.visibility-toggle span:not(.active)', 'Privat').should('exist');
+    cy.contains('.visibility-toggle span.active', 'Öffentlich').should('exist');
     
     // Toggle to Private
     cy.get('.toggle-switch').click();
     
     // Check toggled state (Private active)
-    cy.contains('.visibility-toggle span.active', 'Private').should('exist');
-    cy.contains('.visibility-toggle span:not(.active)', 'Public').should('exist');
+    cy.contains('.visibility-toggle span.active', 'Privat').should('exist');
+    cy.contains('.visibility-toggle span:not(.active)', 'Öffentlich').should('exist');
   });
 
   /**
@@ -108,8 +108,8 @@ describe('Lobby Tests', () => {
     cy.get('.start-button').click();
     
     // Verify warning message
-    cy.contains('Not enough players').should('be.visible');
-    cy.contains('At least 2 players are required to start the game').should('be.visible');
+    cy.contains('Nicht genügend Spieler').should('be.visible');
+    cy.contains('Es müssen mindestens 2 Spieler im Spiel sein, um zu starten.').should('be.visible');
 
     // Dismiss warning
     cy.contains('Okay').click();

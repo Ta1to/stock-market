@@ -30,7 +30,7 @@ Cypress.Commands.add('login', (email, password) => {
   cy.url().should('not.include', '/login', { timeout: 10000 });
   
   // Ensure homepage has loaded
-  cy.get('img[src="/stockpoker.png"]', { timeout: 5000 }).should('be.visible');
+  cy.contains('h1', 'Stock Poker', { timeout: 5000 }).should('be.visible');
 })
 
 /**
