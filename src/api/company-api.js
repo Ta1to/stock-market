@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { ALPHA_VANTAGE_API } from '../config/api';
-import { logError } from '../utils/errorUtils';
+import {ALPHA_VANTAGE_API} from '@/config/api';
+import {logError} from '@/utils/errorUtils';
 
 /**
  * CompanyAPI provides functions for fetching company information
@@ -48,7 +48,7 @@ export const getCompanyInfo = async (symbol) => {
       return null;
     }
 
-    const companyInfo = {
+    return {
       description: response.data.Description || '',
       sector: response.data.Sector || '',
       industry: response.data.Industry || '',
@@ -60,8 +60,6 @@ export const getCompanyInfo = async (symbol) => {
       exchange: response.data.Exchange || '',
       name: response.data.Name || symbol
     };
-
-    return companyInfo;
 
   } catch (error) {
     logError(error, 'CompanyAPI:getCompanyInfo');

@@ -1,0 +1,211 @@
+/* Auth pages shared styling */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+
+.auth-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--bg-dark-primary), var(--bg-dark-secondary));
+}
+
+.login-card,
+.register-card {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  padding: 48px;
+  border-radius: 16px;
+  background: rgba(30, 41, 59, 0.8);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.login-card-overlay,
+.register-card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(255, 215, 0, 0.05));
+  border-radius: 16px;
+  z-index: -1;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.header-section {
+  margin-bottom: 32px;
+}
+
+.app-logo {
+  width: 180px;
+  height: 180px;
+  display: block;
+  margin: 0 auto;
+}
+
+.logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.card-title {
+  font-size: 28px;
+  color: var(--accent-gold);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.card-subtitle {
+  color: #94a3b8;
+  margin-top: 0;
+}
+
+.card-content {
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  color: #e2e8f0;
+  font-size: 14px;
+}
+
+.input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 8px;
+  padding: 0 12px;
+  transition: border-color 0.2s;
+}
+
+.input-container:focus-within {
+  border-color: var(--accent-gold);
+}
+
+.form-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  padding: 12px 8px;
+  font-size: 16px;
+  outline: none;
+}
+
+.error-message {
+  color: #ef4444;
+  border: none;
+  font-size: 12px;
+  margin-top: 10px;
+  margin-bottom: 0;
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.alert-error {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.submit-button {
+  display: block;
+  width: 90%;
+  margin: 24px auto;
+  background: linear-gradient(to right, var(--accent-gold), #ff9900);
+  border: none;
+  color: white;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  height: 44px;
+}
+
+.submit-button:hover {
+  opacity: 0.9;
+}
+
+.submit-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255,255,255,.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.card-actions {
+  text-align: center;
+}
+
+.signup-link,
+.login-link {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 16px;
+}
+
+.link-text {
+  color: var(--accent-gold);
+  font-weight: 500;
+}
+
+/* Font Awesome icon styling */
+.input-container .fa {
+  width: 24px;
+  margin-right: 8px;
+  color: #ffffff;
+  font-size: 18px;
+  text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .login-card,
+  .register-card {
+    padding: 24px;
+  }
+  
+  .card-title {
+    font-size: 24px;
+  }
+}

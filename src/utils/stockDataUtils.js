@@ -10,11 +10,11 @@
  */
 export const getLimitedStockData = (stockData) => {
     if (!stockData?.dates || !stockData?.prices) return null;
-        const cuttoffIndexDate = -2; 
-        const cuttoffIndexPrice = -5;
+        const cutOffIndexDate = -2;
+        const cutOffIndexPrice = -5;
     return {
-      dates: stockData.dates.slice(0, cuttoffIndexDate),
-      prices: stockData.prices.slice(0, cuttoffIndexPrice)
+      dates: stockData.dates.slice(0, cutOffIndexDate),
+      prices: stockData.prices.slice(0, cutOffIndexPrice)
     };
   };
 

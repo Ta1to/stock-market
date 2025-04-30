@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { logError } from '../utils/errorUtils';
-import { MARKETAUX_API } from '../config/api';
+import {logError} from '@/utils/errorUtils';
+import {MARKETAUX_API} from '@/config/api';
 
 /**
  * NewsAPI provides functions for fetching stock news and sentiment analysis
@@ -91,25 +91,23 @@ export const getStockNews = async (symbol, limit = 3) => {
         return trimmedDesc.endsWith('.') || trimmedDesc.endsWith('!') || trimmedDesc.endsWith('?');
       }) || [];
     }
-    
-    const processedNews = newsItems
-      .slice(0, limit)
-      .map(item => {
-        let summary = item.description || item.summary || '';
-        
-        if (summary.endsWith('...') || summary.endsWith('…')) {
-          summary = summary.slice(0, -3) + '.';
-        }
-        
-        return {
-          title: item.title || '',
-          summary: summary,
-          source: item.source || '',
-          url: item.url || ''
-        };
-      });
 
-    return processedNews;
+    return newsItems
+        .slice(0, limit)
+        .map(item => {
+          let summary = item.description || item.summary || '';
+
+          if (summary.endsWith('...') || summary.endsWith('…')) {
+            summary = summary.slice(0, -3) + '.';
+          }
+
+          return {
+            title: item.title || '',
+            summary: summary,
+            source: item.source || '',
+            url: item.url || ''
+          };
+        });
 
   } catch (error) {
     logError(error, 'NewsAPI:getStockNews');

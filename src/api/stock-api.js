@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { TWELVE_DATA_API } from '../config/api';
-import { logError, getUserErrorMessage } from '../utils/errorUtils';
-import { stockList } from '../utils/stock-list';
+import {TWELVE_DATA_API} from '@/config/api';
+import {getUserErrorMessage, logError} from '@/utils/errorUtils';
+import {stockList} from '@/utils/stock-list';
 
 /**
  * StockAPI provides functions for fetching stock data from external services
@@ -42,9 +42,8 @@ export const getStockPrice = async (symbol) => {
             logError(error, 'StockAPI');
             throw error;
         }
-        
-        const latestPrice = data.values[0].open;
-        return latestPrice;
+
+        return data.values[0].open;
     } catch (error) {
         logError(error, 'StockAPI:getStockPrice');
         throw new Error(getUserErrorMessage(error, `Failed to get price for ${symbol}`));
@@ -67,13 +66,13 @@ export const getStockHistory = async (symbol) => {
             },
         });
         const data = response.data;
-        
+
         if (!data || !data.values) {
             const error = new Error('Invalid response format');
             logError(error, 'StockAPI');
-            throw error;
+            throw new Error(`Failed to process stock history: ${error.message}`);
         }
-        
+
         const timeSeries = data.values;
         const dates = timeSeries
             .reverse()
@@ -92,7 +91,7 @@ export const getStockHistory = async (symbol) => {
         const prices = timeSeries
             .reverse()
             .map(entry => parseFloat(entry.open));
-        
+
         return { dates, prices };
     } catch (error) {
         logError(error, 'StockAPI:getStockHistory');

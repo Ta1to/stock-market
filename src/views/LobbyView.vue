@@ -7,12 +7,12 @@
           Join Code: {{ joinCode }}
         </div>
         <div v-if="isCreator" class="visibility-toggle">
-          <span :class="{ 'active': !isPublic }">Privat</span>
+          <span :class="{ 'active': !isPublic }">Private</span>
           <!-- Replace checkbox with div-based toggle similar to HomeView.vue -->
           <div class="toggle-switch" @click="toggleVisibility">
             <div class="toggle-slider" :class="{'right': !isPublic}"></div>
           </div>
-          <span :class="{ 'active': isPublic }">Öffentlich</span>
+          <span :class="{ 'active': isPublic }">Public</span>
         </div>
       </div>
       
@@ -25,7 +25,7 @@
       
       <div class="action-buttons">
         <button v-if="isCreator" @click="deleteGame" class="action-button delete-button">
-          <i class="fas fa-trash-alt"></i> Spiel löschen
+          <i class="fas fa-trash-alt"></i> Delete Game
         </button>
         <button 
           v-if="isCreator" 
@@ -35,13 +35,13 @@
         >
           <i v-if="!isLoading" class="fas fa-play"></i>
           <i v-else class="fas fa-spinner fa-spin"></i>
-          {{ isLoading ? 'Wird geladen...' : 'Spiel starten' }}
+          {{ isLoading ? 'Loading...' : 'Start Game' }}
         </button>
         <button 
           v-if="!isCreator" 
           @click="leaveGame" 
           class="action-button leave-button">
-          <i class="fas fa-sign-out-alt"></i> Spiel verlassen
+          <i class="fas fa-sign-out-alt"></i> Leave Game
         </button>
       </div>
     </div>
@@ -151,8 +151,8 @@ export default {
       if (this.users.length < 2) {
         Swal.fire({ 
           icon: 'warning',
-          title: 'Nicht genügend Spieler',
-          text: 'Es müssen mindestens 2 Spieler im Spiel sein, um zu starten.',
+          title: 'Not enough players',
+          text: 'There must be at least 2 players in the game to start.',
           confirmButtonColor: '#dc2626',
           iconColor: '#dc2626',
           background: 'rgb(15, 15, 30)',
@@ -223,8 +223,8 @@ export default {
         console.error("Error starting game:", e);
         Swal.fire({
           icon: 'error',
-          title: 'API Fehler',
-          text: 'Derzeit gibt es Probleme mit den Stock APIs. Bitte versuchen Sie es später.',
+          title: 'API Error',
+          text: 'There are currently problems with the stock APIs. Please try again later.',
           confirmButtonColor: '#dc2626',
           background: 'rgb(15, 15, 30)',
           customClass: {

@@ -13,29 +13,29 @@
 
       <!-- Public/Private Toggle -->
       <div class="toggle-container">
-        <span :class="{'active': isGamePublic}" @click="isGamePublic = true">Öffentlich</span>
+        <span :class="{'active': isGamePublic}" @click="isGamePublic = true">Public</span>
         <div class="toggle-switch" @click="isGamePublic = !isGamePublic">
           <div class="toggle-slider" :class="{'right': !isGamePublic}"></div>
         </div>
-        <span :class="{'active': !isGamePublic}" @click="isGamePublic = false">Privat</span>
+        <span :class="{'active': !isGamePublic}" @click="isGamePublic = false">Private</span>
       </div>
 
       <!-- Public Games Section -->
       <div class="public-games-container">
-        <h2 class="text-2xl font-bold text-center text-white mb-4">🔹 Öffentliche Spiele 🔹</h2>
+        <h2 class="text-2xl font-bold text-center text-white mb-4">Public Games</h2>
 
         <div v-if="publicGames.length" class="game-grid">
           <div v-for="game in publicGames" :key="game.id" class="game-card">
             <div class="game-info">
               <h3 class="text-lg font-semibold">{{ game.code }}</h3>
-              <p class="text-sm">{{ game.players.length }} Spieler</p>
+              <p class="text-sm">{{ game.players.length }} Player</p>
             </div>
             <button @click="joinGame(game)" class="join-button">
               Beitreten
             </button>
           </div>
         </div>
-        <p v-else class="text-center text-gray-400">Keine öffentlichen Spiele verfügbar.</p>
+        <p v-else class="text-center text-gray-400">No public Games available.</p>
       </div>
 
       <!-- Join Game Modal -->

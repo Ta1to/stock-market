@@ -1,6 +1,6 @@
 import axios from 'axios';
-import {TWELVE_DATA_INDICATORS_API } from '../config/api';
-import { logError } from '../utils/errorUtils';
+import {TWELVE_DATA_INDICATORS_API } from '@/config/api';
+import { logError } from '@/utils/errorUtils';
 
 /**
  * Fetch the two most important technical indicators for buy/sell decisions

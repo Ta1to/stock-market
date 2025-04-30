@@ -1,8 +1,8 @@
-import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
-import { getDatabase, ref, set, get, update, remove, onValue, off } from 'firebase/database';
-import { FIREBASE_CONFIG } from '../config/api';
-import { logError } from '../utils/errorUtils';
+import {initializeApp} from "firebase/app";
+import {createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, signOut} from "firebase/auth";
+import {get, getDatabase, off, onValue, ref, remove, set, update} from 'firebase/database';
+import {FIREBASE_CONFIG} from '@/config/api';
+import {logError} from '@/utils/errorUtils';
 
 /**
  * Firebase initialization and API for authentication and database operations
@@ -27,8 +27,7 @@ export { db, auth, app };
  */
 export const signIn = async (email, password) => {
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return userCredential;
+    return await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
     logError(error, 'FirebaseAPI:signIn');
     throw error;
@@ -43,8 +42,7 @@ export const signIn = async (email, password) => {
  */
 export const register = async (email, password) => {
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    return userCredential;
+    return await createUserWithEmailAndPassword(auth, email, password);
   } catch (error) {
     logError(error, 'FirebaseAPI:register');
     throw error;

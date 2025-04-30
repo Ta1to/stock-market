@@ -10,17 +10,29 @@
   min-height: 100vh;
   width: 100%;
   position: relative;
-  background: 
-    radial-gradient(circle at center, rgba(255, 215, 0, 0.1) 0%, transparent 70%),
-    url('../images/poker.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  background-color: var(--bg-dark-primary);
   display: flex;
   align-items: flex-start;
   justify-content: center;
   padding-top: clamp(2rem, 5vh, 4rem);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Background image for lobby wrapper, matching homeview style */
+.lobby-wrapper::after {
+  content: '';
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 40%;
+  height: 40%;
+  background-image: url('../images/stockpoker.png');
+  background-size: contain;
+  background-position: bottom right;
+  background-repeat: no-repeat;
+  opacity: 0.3;
+  z-index: 0;
 }
 
 .lobby-container {

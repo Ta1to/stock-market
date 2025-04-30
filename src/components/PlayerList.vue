@@ -1,6 +1,6 @@
 <template>
     <div class="players-container">
-      <h2 class="players-title">Spieler ({{ players.length }})</h2>
+      <h2 class="players-title">Player ({{ players.length }})</h2>
       <div class="players-list">
         <div v-for="player in players" :key="player.uid" class="player-card">
           <div class="player-info">

@@ -1,4 +1,4 @@
-import { db } from "../api/firebase-api";
+import { db } from "@/api/firebase-api";
 import { ref, set, get, update, remove } from "firebase/database";
 
 /**

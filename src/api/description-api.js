@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { ALPHA_VANTAGE_API } from '../config/api';
-import { logError } from '../utils/errorUtils';
+import {ALPHA_VANTAGE_API} from '@/config/api';
+import {logError} from '@/utils/errorUtils';
 
 /**
  * Fetches stock information from the Alpha Vantage API.
@@ -54,18 +54,12 @@ export const getStockInfo = async (symbol) => {
       return null;
     }
 
-    /**
-     * Extracts relevant company information
-     * @type {Object}
-     */
-    const stockInfo = {
+    return {
       description: response.data.Description || '',
       sector: response.data.Sector || '',
       industry: response.data.Industry || '',
       website: response.data.Website || ''
     };
-
-    return stockInfo;
 
   } catch (error) {
     /**

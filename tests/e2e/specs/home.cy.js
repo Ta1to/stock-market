@@ -22,9 +22,9 @@ describe('Home View Tests', () => {
     cy.get('body').within(() => {
       cy.contains('Create Game');
       cy.contains('Join Game');
-      cy.contains('Öffentlich');
-      cy.contains('Privat');
-      cy.contains('Öffentliche Spiele');
+      cy.contains('Public');
+      cy.contains('Private');
+      cy.contains('Public Games');
     });
   });
 
@@ -33,15 +33,15 @@ describe('Home View Tests', () => {
    */
   it('should toggle between public and private game modes', () => {
     // Optimized toggle check with fewer assertions
-    cy.contains('span.active', 'Öffentlich').should('exist');
+    cy.contains('span.active', 'Public').should('exist');
     
     // First click for toggling
     cy.get('.toggle-switch').click();
-    cy.contains('span.active', 'Privat').should('exist');
+    cy.contains('span.active', 'Private').should('exist');
     
     // Second click for toggling back
     cy.get('.toggle-switch').click();
-    cy.contains('span.active', 'Öffentlich').should('exist');
+    cy.contains('span.active', 'Public').should('exist');
   });
 
   /**
@@ -74,7 +74,7 @@ describe('Home View Tests', () => {
       if ($body.find('.game-card').length) {
         cy.get('.game-card').first().should('be.visible');
       } else {
-        cy.contains('Keine öffentlichen Spiele verfügbar').should('be.visible');
+        cy.contains('No public Games available').should('be.visible');
       }
     });
   });
