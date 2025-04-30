@@ -63,11 +63,11 @@ describe('Authentication Tests', () => {
       cy.get('input[type="password"]').should('exist')
       
       // Click on eye icon to make password visible
-      cy.get('.eye-off-icon').click()
+      cy.get('.fa-eye-slash').click()
       cy.get('input[type="text"]').should('exist')
       
       // Click again to hide password
-      cy.get('.eye-icon').click()
+      cy.get('.fa-eye').click()
       cy.get('input[type="password"]').should('exist')
     })
 
@@ -164,11 +164,11 @@ describe('Authentication Tests', () => {
       cy.get('input[type="password"]').should('exist')
       
       // Click on eye icon to make password visible
-      cy.get('.eye-off-icon').click()
+      cy.get('.fa-eye-slash').click()
       cy.get('input[type="text"]').should('exist')
       
       // Click again to hide password
-      cy.get('.eye-icon').click()
+      cy.get('.fa-eye').click()
       cy.get('input[type="password"]').should('exist')
     })
 
