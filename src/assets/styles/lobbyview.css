@@ -25,14 +25,15 @@
   position: absolute;
   bottom: 20px;
   right: 20px;
-  width: 40%;
-  height: 40%;
+  width: 30%;
+  height: 30%;
   background-image: url('../images/stockpoker.png');
   background-size: contain;
   background-position: bottom right;
   background-repeat: no-repeat;
   opacity: 0.3;
   z-index: 0;
+  pointer-events: none; /* Ensures the image doesn't block clicks */
 }
 
 .lobby-container {

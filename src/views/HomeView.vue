@@ -22,11 +22,10 @@
 
       <!-- Public Games Section -->
       <div class="public-games-container">
-        <h2 class="text-2xl font-bold text-center text-white mb-4">Public Games</h2>
-
-        <div v-if="publicGames.length" class="game-grid">
-          <div v-for="game in publicGames" :key="game.id" class="game-card">
-            <div class="game-info">
+        <h2 class="text-2xl font-bold text-center text-white mb-4">Public Games</h2>        
+        <div v-if="filteredPublicGames.length" class="game-grid">
+          <div v-for="game in filteredPublicGames" :key="game.id" class="game-card">
+             <div class="game-info">
               <h3 class="text-lg font-semibold">{{ game.code }}</h3>
               <p class="text-sm">{{ game.players.length }} Player</p>
             </div>
@@ -35,7 +34,7 @@
             </button>
           </div>
         </div>
-        <p v-else class="text-center text-gray-400">No public Games available.</p>
+        <p v-else class="text-center text-gray-400">No public Games available with fewer than 4 players.</p>
       </div>
 
       <!-- Join Game Modal -->
@@ -62,14 +61,18 @@ export default {
   name: 'HomeView',
   components: {
     LogoutButton
-  },
-  data() {
+  },  data() {
     return {
       showJoinGameModal: false,
       joinCode: '',
       isGamePublic: true,
       publicGames: [],
     };
+  },
+  computed: {
+    filteredPublicGames() {
+      return this.publicGames.filter(game => game.players.length < 4);
+    }
   },
   methods: {
     showJoinGame() {
