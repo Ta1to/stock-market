@@ -77,7 +77,7 @@ export const useGameStore = defineStore('game', {
           console.warn("Game not found or no data at this path");
           return;
         }
-        console.log("Game data received:", data);
+        console.log("Game data received");
 
         // Update the game state with the received data
         this.creator = data.creator;
