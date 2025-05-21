@@ -11,8 +11,7 @@ jest.mock('firebase/auth', () => ({
 describe('LogoutButton.vue', () => {
   let mockRouter;
   let mockAuth;
-  
-  beforeEach(() => {
+    beforeEach(() => {
     // Setup mocks
     mockAuth = {};
     mockRouter = {
@@ -35,9 +34,8 @@ describe('LogoutButton.vue', () => {
       }
     });
     
-    expect(wrapper.find('.logout-button').exists()).toBe(true);
-    expect(wrapper.text()).toBe('LOGOUT');
-  });
+    expect(wrapper.find('.btn.primary').exists()).toBe(true);
+    expect(wrapper.text()).toBe('LOGOUT');  });
   
   it('calls logout method when button is clicked', async () => {
     const wrapper = mount(LogoutButton, {
@@ -50,10 +48,9 @@ describe('LogoutButton.vue', () => {
     
     const logoutSpy = jest.spyOn(wrapper.vm, 'logout');
     
-    await wrapper.find('.logout-button').trigger('click');
+    await wrapper.find('.btn.primary').trigger('click');
     
-    expect(logoutSpy).toHaveBeenCalled();
-  });
+    expect(logoutSpy).toHaveBeenCalled();  });
   
   it('signs out the user and redirects to login page on success', async () => {
     const wrapper = mount(LogoutButton, {
@@ -64,7 +61,7 @@ describe('LogoutButton.vue', () => {
       }
     });
     
-    await wrapper.find('.logout-button').trigger('click');
+    await wrapper.find('.btn.primary').trigger('click');
     
     expect(getAuth).toHaveBeenCalled();
     expect(signOut).toHaveBeenCalledWith(mockAuth);
@@ -72,8 +69,7 @@ describe('LogoutButton.vue', () => {
     // Wait for the promise to resolve
     await new Promise(process.nextTick);
     
-    expect(mockRouter.push).toHaveBeenCalledWith('/login');
-  });
+    expect(mockRouter.push).toHaveBeenCalledWith('/login');  });
   
   it('handles errors during sign-out', async () => {
     const error = new Error('Sign out failed');
@@ -87,7 +83,7 @@ describe('LogoutButton.vue', () => {
       }
     });
     
-    await wrapper.find('.logout-button').trigger('click');
+    await wrapper.find('.btn.primary').trigger('click');
     
     // Wait for the promise to reject
     await new Promise(process.nextTick);

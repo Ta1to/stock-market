@@ -1,5 +1,5 @@
 <template>
-  <div class="player-card" :class="{ 'current-player': isCurrentUser }">
+  <div class="player-card" :class="{ 'current-player': isCurrentTurn }">
     <!-- Player avatar section -->
     <div class="player-avatar">
       <!-- If player.profilePicture is provided, show the image; otherwise show a default icon/text -->
@@ -39,17 +39,14 @@ export default {
       type: Object,
       required: true,
     },
-    // New prop for the currently logged in user's id
-    currentUserId: {
-      type: String,
-      default: '',
-    },
-  },
-  computed: {
-    // Check if the displayed player is the current user
-    isCurrentUser() {
-      return this.player.uid === this.currentUserId;
-    },
+    currentTurnId: {
+      type: [Number, String],
+      default: null,
+    }
+  },  computed: {
+    isCurrentTurn() {
+      return this.player.uid === this.currentTurnId;
+    }
   },
 };
 </script>

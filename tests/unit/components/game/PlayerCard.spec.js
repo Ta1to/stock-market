@@ -6,10 +6,11 @@ describe('PlayerCard.vue', () => {
   const defaultProps = {
     player: {
       uid: 'player1',
+      id: 'player1',
       name: 'Test Player',
       chips: 1000
     },
-    currentUserId: 'player2' // Different from player.uid by default
+    currentTurnId: 'player2' // Different from player.id by default
   };
 
   const createWrapper = (props = {}) => {
@@ -57,22 +58,22 @@ describe('PlayerCard.vue', () => {
     expect(wrapper.find('img').attributes('src')).toBe('https://example.com/profile.jpg');
   });
 
-  it('applies current-player class when player is current user', () => {
-    const wrapper = createWrapper({
-      player: {
-        uid: 'current-user',
-        name: 'Current User',
-        chips: 1000
-      },
-      currentUserId: 'current-user'
-    });
-    
-    expect(wrapper.classes()).toContain('current-player');
-  });
-
-  it('does not apply current-player class when player is not current user', () => {
+  it('does not apply current-player class when player is not current turn', () => {
     const wrapper = createWrapper(); // Using default props where ids are different
     
     expect(wrapper.classes()).not.toContain('current-player');
+  });
+  
+  it('applies current-player class when player is current turn', () => {
+    const wrapper = createWrapper({
+      player: {
+        uid: 'current-player',
+        name: 'Current Player',
+        chips: 1000
+      },
+      currentTurnId: 'current-player'
+    });
+    
+    expect(wrapper.classes()).toContain('current-player');
   });
 });

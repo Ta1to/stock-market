@@ -35,10 +35,10 @@
       </div>
       
       <!-- Visual indicator for current turn -->
-      <div v-if="gameStore.players.length" class="turn-indicator">
+      <!-- <div v-if="gameStore.players.length" class="turn-indicator">
         <div class="turn-label">Current Turn</div>
         <div class="player-turn">{{ currentTurnPlayer.name || currentTurnPlayer.id }}</div>
-      </div>
+      </div> -->
 
       <!-- Error message display -->
       <div v-if="gameStore.errorMessage" class="error-message">
@@ -63,13 +63,12 @@
         :stockData="stockData"
         @submit="handlePrediction"
         @close="closePopup"
-      />
-
-      <!-- Poker Table with Playercards - Pass current round data instead of just bets -->
+      />      <!-- Poker Table with Playercards - Pass current round data instead of just bets -->
       <PokerTable 
         v-if="gameStore.players.length" 
         :players="gameStore.players" 
         :currentUserId="currentUserId"
+        :currentTurnIndex="gameStore.currentTurnIndex"
         :pot="gameStore.pot"
         :currentRound="gameStore.currentRound"
         :roundsData="gameStore.rounds"

@@ -5,7 +5,7 @@ import PlayerCard from '@/components/game/PlayerCard.vue';
 // Mock the PlayerCard component
 jest.mock('@/components/game/PlayerCard.vue', () => ({
   name: 'PlayerCard',
-  props: ['player', 'currentUserId'],
+  props: ['player', 'currentTurnId'],
   template: '<div class="mock-player-card">{{ player.name }}</div>'
 }));
 
@@ -16,8 +16,8 @@ describe('PokerTable.vue', () => {
       { uid: 'player1', id: 'player1', name: 'Player 1', chips: 1000 },
       { uid: 'player2', id: 'player2', name: 'Player 2', chips: 1500 },
       { uid: 'player3', id: 'player3', name: 'Player 3', chips: 800 }
-    ],
-    currentUserId: 'player1',
+    ],    currentUserId: 'player1',
+    currentTurnIndex: 0,
     pot: 200,
     currentRound: 1,
     roundsData: {

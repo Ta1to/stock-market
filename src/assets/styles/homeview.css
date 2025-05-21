@@ -124,7 +124,7 @@ html, body {
   
 .btn.primary {
     background: var(--btn-gradient-primary);
-    color: var(--bg-dark-primary);
+    color: var(--text-light);
     box-shadow: 0 10px 20px rgba(255, 102, 0, 0.3);
   }
   
@@ -241,13 +241,14 @@ html, body {
   }
   
 /* Join button styles */
-.join-button {
-    background: linear-gradient(135deg, #4facfe, #00f2fe);
-    color: white;
+.join-btn {
+    background: linear-gradient(135deg, #474763, #32324a);
+    color: var(--text-light);
     padding: 0.75rem 1.5rem;
     border-radius: 10px;
+    border: none;
     font-weight: bold;
-    transition: all 0.4s ease;
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
     position: relative;
     z-index: 2;
     text-transform: uppercase;
@@ -255,13 +256,31 @@ html, body {
     margin-top: auto;
     width: fit-content;
     align-self: center;
-    font-size: clamp(0.8rem, 2vw, 1rem);
+    font-size: 1.1rem;
     padding: clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    overflow: hidden;
+  }
+
+.join-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: all 0.4s ease;
   }
   
-.join-button:hover {
+.join-btn:hover::before {
+    left: 100%;
+  }
+  
+.join-btn:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
   }
   
 /* Modal overlay and container */
@@ -423,13 +442,12 @@ html, body {
     .game-options {
       margin-bottom: 1.5rem;
     }
-  
     .public-games-container {
       padding: 0 10px;
       margin: 0 5px;
     }
   
-    .join-button {
+    .join-btn {
       padding: 0.6rem 1rem;
       font-size: 0.9rem;
     }
@@ -449,15 +467,14 @@ html, body {
 @media (hover: none) {
     .game-card:hover {
       transform: none;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3),
-                  0 0 0 1px var(--accent-gold-transparent);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     }
   
     .btn:hover::before {
       display: none;
     }
   
-    .join-button:hover {
+    .join-btn:hover {
       transform: none;
     }
   

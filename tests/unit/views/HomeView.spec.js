@@ -194,7 +194,7 @@ describe('HomeView.vue', () => {
     await flushPromises(); // Wait for public games to load
     
     // Click join on the first game
-    await wrapper.findAll('.game-card .join-button')[0].trigger('click');
+    await wrapper.findAll('.game-card .join-btn')[0].trigger('click');
     await flushPromises();
     
     // Should update players in the game

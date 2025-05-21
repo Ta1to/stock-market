@@ -6,14 +6,12 @@
       <!-- Display the pot in the center of the table -->
       <div class="pot-display">
         Pot: {{ pot }}
-      </div>
-  
-      <!-- Render each player around the ellipse -->
+      </div>      <!-- Render each player around the ellipse -->
       <PlayerCard
         v-for="(player, index) in players"
         :key="player.id"
         :player="player"
-        :currentUserId="currentUserId"
+        :currentTurnId="currentTurnPlayer ? currentTurnPlayer.uid : null"
         :style="getPositionStyle(index, players.length)"
       />
 
@@ -56,14 +54,17 @@
     components: {
       PlayerCard,
     },
-    props: {
-      players: {
+    props: {      players: {
         type: Array,
         default: () => [],
       },
       currentUserId: {
         type: String,
         default: '',
+      },
+      currentTurnIndex: {
+        type: Number,
+        default: 0,
       },
       pot: {
         type: Number,
@@ -72,11 +73,18 @@
       currentRound: {
         type: Number,
         required: true
-      },
-      roundsData: {
+      },      roundsData: {
         type: Object,
         default: () => ({})
       }
+    },
+    computed: {
+      currentTurnPlayer() {
+        if (!this.players.length || this.currentTurnIndex < 0 || this.currentTurnIndex >= this.players.length) {
+          return null;
+        }
+        return this.players[this.currentTurnIndex];
+      },
     },
     methods: {
       /**
@@ -318,4 +326,12 @@
     height: 8px;
     opacity: 0.1;
   }
+
+  /* Highlight the current user with a yellow border or background */
+  .current-player {
+    border: 2px solid yellow;
+    /* Alternatively, you might want to change the background-color */
+    /* background-color: #fdfd96; */
+  }
+
   </style>
