@@ -121,12 +121,12 @@ export default {
 .poker-hud {
   position: fixed;
   left: 50%;
-  bottom: 30px;
+  bottom: 20px;
   transform: translateX(-50%);
-  width: 450px;
+  width: 400px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
   padding: 20px;
   background: linear-gradient(145deg, #16213e, #0f0f1a);
   color: #fff;

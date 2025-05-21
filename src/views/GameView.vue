@@ -27,7 +27,6 @@
     />
     <div class="game-container">
       <div class="game-header">
-        <h1 class="game-title">Stock Poker</h1>
         <div class="game-info">
           <div class="round-badge">Round: {{ gameStore.currentRound }}/3</div>
           <div class="phase-badge">Phase: {{ gameStore.currentPhase }}</div>
