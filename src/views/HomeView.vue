@@ -22,14 +22,15 @@
 
       <!-- Public Games Section -->
       <div class="public-games-container">
-        <h2 class="text-2xl font-bold text-center text-white mb-10">Public Games</h2>        
-        <div v-if="filteredPublicGames.length" class="game-grid">          <div v-for="game in filteredPublicGames" :key="game.id" class="game-card">
-            <div class="game-info">
+        <h2 class="text-2xl font-bold text-center text-white mb-4">Public Games</h2>        
+        <div v-if="filteredPublicGames.length" class="game-grid">
+          <div v-for="game in filteredPublicGames" :key="game.id" class="game-card">
+             <div class="game-info">
               <h3 class="text-lg font-semibold">{{ game.code }}</h3>
               <p class="text-sm">{{ game.players.length }} Player</p>
             </div>
-            <button @click="joinGame(game)" class="join-btn">
-              JOIN
+            <button @click="joinGame(game)" class="join-button">
+              Beitreten
             </button>
           </div>
         </div>

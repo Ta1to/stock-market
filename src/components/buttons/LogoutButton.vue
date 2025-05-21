@@ -1,5 +1,5 @@
 <template>
-  <button @click="logout" class="btn primary">LOGOUT</button>
+  <button @click="logout" class="btn primary logout-button">LOGOUT</button>
 </template>
   
 <script>
@@ -23,7 +23,14 @@ export default {
     },
   }
 }
-</script>  
+</script>
+  
 <style scoped>
-/* No longer needed - using the common .btn.primary styles from homeview.css */
+.logout-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 10px 20px;
+  border-radius: 10px;
+}
 </style>

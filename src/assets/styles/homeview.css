@@ -189,14 +189,12 @@ html, body {
     
   }
   
-.game-card {
+.game-card {    
     background: linear-gradient(145deg, #16213e, #0f0f1a);
     padding: 2rem;
     border-radius: 15px;
     text-align: center;
-    box-shadow: 
-      0 10px 30px rgba(0, 0, 0, 0.3),
-      0 0 0 1px var(--accent-gold-transparent);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     transition: all 0.4s ease;
     position: relative;
     overflow: hidden;
@@ -204,6 +202,9 @@ html, body {
     flex-direction: column;
     justify-content: space-between;
     min-height: 200px;
+    box-shadow: 
+    0 5px 15px rgba(0, 0, 0, 0.3),
+    0 0 0 1px var(--accent-gold-transparent);
   }
   
 .game-card::before {
@@ -220,9 +221,11 @@ html, body {
   
 .game-card:hover {
     transform: translateY(-10px) scale(1.03);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
     box-shadow: 
-      0 15px 40px rgba(0, 0, 0, 0.4),
-      0 0 0 2px var(--accent-gold);
+    0 5px 15px rgba(0, 0, 0, 0.7),
+    0 0 0 2px var(--accent-gold),
+    0 0 10px var(--accent-gold-transparent);
   }
 
 .game-info {
@@ -241,14 +244,12 @@ html, body {
   }
   
 /* Join button styles */
-.join-btn {
-    background: linear-gradient(135deg, #474763, #32324a);
+.join-button {    background: var(--btn-gradient-secondary);
     color: var(--text-light);
-    padding: 0.75rem 1.5rem;
     border-radius: 10px;
     border: none;
     font-weight: bold;
-    transition: transform 0.4s ease, box-shadow 0.4s ease;
+    transition: all 0.4s ease;
     position: relative;
     z-index: 2;
     text-transform: uppercase;
@@ -256,14 +257,13 @@ html, body {
     margin-top: auto;
     width: fit-content;
     align-self: center;
-    font-size: 1.1rem;
+    font-size: clamp(0.8rem, 2vw, 1rem);
     padding: clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    cursor: pointer;
     overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
   }
 
-.join-btn::before {
+.join-button::before {
     content: '';
     position: absolute;
     top: 0;
@@ -274,13 +274,13 @@ html, body {
     transition: all 0.4s ease;
   }
   
-.join-btn:hover::before {
+.join-button:hover::before {
     left: 100%;
   }
   
-.join-btn:hover {
+.join-button:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
   }
   
 /* Modal overlay and container */
@@ -442,12 +442,13 @@ html, body {
     .game-options {
       margin-bottom: 1.5rem;
     }
+  
     .public-games-container {
       padding: 0 10px;
       margin: 0 5px;
     }
   
-    .join-btn {
+    .join-button {
       padding: 0.6rem 1rem;
       font-size: 0.9rem;
     }
@@ -467,14 +468,15 @@ html, body {
 @media (hover: none) {
     .game-card:hover {
       transform: none;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3),
+                  0 0 0 1px var(--accent-gold-transparent);
     }
   
     .btn:hover::before {
       display: none;
     }
   
-    .join-btn:hover {
+    .join-button:hover {
       transform: none;
     }
   
