@@ -271,9 +271,7 @@ export default {
           gameStore.errorMessage = null;
         }, 5000); // 5 seconds
       }
-    });
-
-    watch(() => gameStore.currentPhase, async (newPhase) => {
+    });    watch(() => gameStore.currentPhase, async (newPhase) => {
       // close all popups when phase changes
       PopupState.activePopup = null;
 
@@ -282,8 +280,10 @@ export default {
         // Determine winner based on the active players
         const activePlayers = gameStore.players.filter((p) => !gameStore.folds[p.uid]);
         
-        // Save the current pot amount before any changes
+        // Save the current pot amount before any changes - verwende den aktuellen Pot
+        // Dieser wurde während der Phasen akkumuliert und nicht zurückgesetzt
         roundPot.value = gameStore.pot;
+        console.log('Final pot amount for round winner:', gameStore.pot);
         
         if (activePlayers.length === 1) {
           // Only one player left (others folded)

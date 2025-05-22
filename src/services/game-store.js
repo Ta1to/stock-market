@@ -161,19 +161,22 @@ export const useGameStore = defineStore('game', {
           phase: 1,
           isSpinning: false
         });
-      }
-
-      await updateRoundPhase(this.gameId, newRound, newPhase);
+      }      await updateRoundPhase(this.gameId, newRound, newPhase);
       await updateCurrentRound(this.gameId, newRound);
 
       // Reset bets, folds, and highestBet when moving to next phase/round
       this.bets = {};
       this.folds = {};
       this.highestBet = 0;
-      this.pot = 0; 
+      
+      // Nur bei einer neuen Runde den Pot zurücksetzen
+      if (newRound > currentRound) {
+        this.pot = 0;
+      }
+      
       this.currentRound = newRound;
       this.currentPhase = newPhase;
-      console.log(`Updated state: round ${this.currentRound}, phase ${this.currentPhase}.`);
+      console.log(`Updated state: round ${this.currentRound}, phase ${this.currentPhase}, pot: ${this.pot}.`);
     },
 
     /**
