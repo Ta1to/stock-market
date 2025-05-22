@@ -63,7 +63,7 @@ describe('PokerTable.vue', () => {
     // Test for first player
     const style0 = vm.getPositionStyle(0, 3);
     expect(style0.position).toBe('absolute');
-    expect(style0.transform).toBe('translate(-50%, -50%)');
+    expect(style0.transform).toBe('translate(-50%, -50%) scale(1)');
     
     // Different positions for different indexes
     const style1 = vm.getPositionStyle(1, 3);
