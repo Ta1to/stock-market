@@ -8,13 +8,12 @@
       </div>
       <div v-if="stockSelected" class="countdown">
         Countdown {{ countdown }} 
-      </div>
-      <button 
+      </div>      <button 
         v-if="isCreator && !spinning && !stockSelected" 
         class="spin-button"
         @click="initiateSpin"
       >
-        Aktie auswählen
+        Select Stock
       </button>
     </div>
   </div>

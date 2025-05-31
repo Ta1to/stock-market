@@ -231,41 +231,35 @@
         
         // Generate chips in denominations (100, 25, 5, 1)
         // Higher value chips at the bottom of the stack
-        
-        // Add gold chips (100 each)
-        const goldChips = Math.floor(remaining / 100);
+          const goldChips = Math.floor(remaining / 100);
         for (let i = 0; i < goldChips; i++) {
           chips.push({ type: 'gold-chip', value: 100 });
         }
         remaining -= goldChips * 100;
         
-        // Add silver chips (25 each)
         const silverChips = Math.floor(remaining / 25);
         for (let i = 0; i < silverChips; i++) {
           chips.push({ type: 'silver-chip', value: 25 });
         }
         remaining -= silverChips * 25;
         
-        // Add blue chips (5 each)
         const blueChips = Math.floor(remaining / 5);
         for (let i = 0; i < blueChips; i++) {
           chips.push({ type: 'blue-chip', value: 5 });
         }
         remaining -= blueChips * 5;
         
-        // Add red chips (1 each)
         for (let i = 0; i < remaining; i++) {
           chips.push({ type: 'red-chip', value: 1 });
         }
         
         // Dynamically adjust max chip count based on screen size and player count
         let maxChips = 12; // Default for standard screens
-        
-        if (window.innerWidth > 1920) {
-          // Für große Bildschirme mehr Chips erlauben
+          if (window.innerWidth > 1920) {
+          // Allow more chips for large screens
           maxChips = this.players.length > 6 ? 14 : 18;
         } else {
-          // Für normale und kleine Bildschirme
+          // For normal and small screens
           maxChips = this.players.length > 6 ? 8 : 12;
         }
         
@@ -412,7 +406,7 @@
     /* Alternatively, you might want to change the background-color */
     /* background-color: #fdfd96; */
   }  /* Responsive adjustments for different screen sizes */
-  /* Für größere Bildschirme (über 1920px) */
+  /* For larger screens (over 1920px) */
   @media (min-width: 1921px) {
     .poker-table {
       width: 900px;
@@ -440,11 +434,10 @@
     .fold-indicator {
       font-size: 16px;
     }
-  }
+  }  
+  /* For medium screens (standard 1080p remains unchanged) */
   
-  /* Für mittlere Bildschirme (Standard 1080p bleibt unverändert) */
-  
-  /* Für kleinere Bildschirme */
+  /* For smaller screens */
   @media (max-width: 768px) {
     .poker-table {
       width: 560px;

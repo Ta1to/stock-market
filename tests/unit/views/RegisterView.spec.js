@@ -25,7 +25,7 @@ jest.mock('@/services/database', () => ({
   writeData: jest.fn().mockResolvedValue(true)
 }))
 
-// Mock für Router
+// Mock for Router
 const mockRouter = {
   push: jest.fn()
 }
@@ -41,10 +41,10 @@ describe('RegisterView.vue', () => {
   let wrapper
   
   beforeEach(() => {
-    // Reset Mocks vor jedem Test
+    // Reset mocks before each test
     jest.clearAllMocks()
     
-    // Mount-Komponente mit Mocks
+    // Mount component with mocks
     wrapper = shallowMount(RegisterView, {
       global: {
         mocks: {
@@ -64,21 +64,20 @@ describe('RegisterView.vue', () => {
     expect(wrapper.find('input[type="password"]').exists()).toBe(true)
     expect(wrapper.find('button[type="submit"]').exists()).toBe(true)
   })
-  
-  it('validates name correctly', async () => {
+    it('validates name correctly', async () => {
     const nameInput = wrapper.find('input[id="name"]')
     
-    // Leerer Name
+    // Empty name
     await nameInput.setValue('')
     await nameInput.trigger('blur')
     expect(wrapper.vm.nameError).toBe('Name is required')
     
-    // Zu kurzer Name
+    // Name too short
     await nameInput.setValue('J')
     await nameInput.trigger('blur')
     expect(wrapper.vm.nameError).toBe('Name must be at least 2 characters')
     
-    // Gültiger Name
+    // Valid name
     await nameInput.setValue('John')
     await nameInput.trigger('blur')
     expect(wrapper.vm.nameError).toBeNull()
@@ -87,36 +86,35 @@ describe('RegisterView.vue', () => {
   it('validates email correctly', async () => {
     const emailInput = wrapper.find('input[type="email"]')
     
-    // Leere Email
+    // Empty email
     await emailInput.setValue('')
     await emailInput.trigger('blur')
     expect(wrapper.vm.emailError).toBe('Email is required')
     
-    // Ungültige Email
+    // Invalid email
     await emailInput.setValue('invalid-email')
     await emailInput.trigger('blur')
     expect(wrapper.vm.emailError).toBe('Email must be valid')
     
-    // Gültige Email
+    // Valid email
     await emailInput.setValue('test@example.com')
     await emailInput.trigger('blur')
     expect(wrapper.vm.emailError).toBeNull()
   })
-  
-  it('validates password correctly', async () => {
+    it('validates password correctly', async () => {
     const passwordInput = wrapper.find('input[type="password"]')
     
-    // Leeres Passwort
+    // Empty password
     await passwordInput.setValue('')
     await passwordInput.trigger('blur')
     expect(wrapper.vm.passwordError).toBe('Password is required')
     
-    // Zu kurzes Passwort
+    // Password too short
     await passwordInput.setValue('12345')
     await passwordInput.trigger('blur')
     expect(wrapper.vm.passwordError).toBe('Password must be at least 6 characters')
     
-    // Gültiges Passwort
+    // Valid password
     await passwordInput.setValue('123456')
     await passwordInput.trigger('blur')
     expect(wrapper.vm.passwordError).toBeNull()
@@ -129,20 +127,19 @@ describe('RegisterView.vue', () => {
       password: 'password123'
     }
     
-    // Setze Formularwerte
+    // Set form values
     await wrapper.setData(testUser)
     
-    // Mock validateForm, um true zurückzugeben
+    // Mock validateForm to return true
     wrapper.vm.validateForm = jest.fn().mockReturnValue(true)
     
-    // Rufe Register-Methode auf
+    // Call register method
     await wrapper.vm.register()
     
-    // Überprüfe Firebase-Aufruf
+    // Check Firebase call
     const { createUserWithEmailAndPassword, getAuth } = require('firebase/auth')
     expect(createUserWithEmailAndPassword).toHaveBeenCalled()
-    
-    // Überprüfe Datenbankaufruf
+      // Check database call
     const { writeData } = require('@/services/database')
     expect(writeData).toHaveBeenCalledWith(
       'users/new-user-id',
@@ -152,45 +149,43 @@ describe('RegisterView.vue', () => {
       })
     )
     
-    // Überprüfe Weiterleitung
+    // Check redirection
     expect(mockRouter.push).toHaveBeenCalledWith('/')
     expect(wrapper.vm.error).toBeNull()
   })
   
-  it('shows error for already used email', async () => {
-    // Setze Formularwerte
+  it('shows error for already used email', async () => {    // Set form values
     await wrapper.setData({
       name: 'John Doe',
       email: 'existing@example.com',
       password: 'password123'
     })
     
-    // Mock validateForm, um true zurückzugeben
+    // Mock validateForm to return true
     wrapper.vm.validateForm = jest.fn().mockReturnValue(true)
     
-    // Rufe Register-Methode auf
+    // Call register method
     await wrapper.vm.register()
     
-    // Überprüfe Fehlermeldung
+    // Check error message
     expect(wrapper.vm.error).toBe('This email is already registered')
     expect(mockRouter.push).not.toHaveBeenCalled()
   })
   
-  it('shows error for invalid email', async () => {
-    // Setze Formularwerte
+  it('shows error for invalid email', async () => {    // Set form values
     await wrapper.setData({
       name: 'John Doe',
       email: 'invalid@example',
       password: 'password123'
     })
     
-    // Mock validateForm, um true zurückzugeben
+    // Mock validateForm to return true
     wrapper.vm.validateForm = jest.fn().mockReturnValue(true)
     
-    // Rufe Register-Methode auf
+    // Call register method
     await wrapper.vm.register()
     
-    // Überprüfe Fehlermeldung
+    // Check error message
     expect(wrapper.vm.error).toBe('Invalid email address')
     expect(mockRouter.push).not.toHaveBeenCalled()
   })
@@ -202,26 +197,25 @@ describe('RegisterView.vue', () => {
       email: 'john@example.com',
       password: '12345'
     })
-    
-    // Mock validateForm, um true zurückzugeben
+      // Mock validateForm to return true
     wrapper.vm.validateForm = jest.fn().mockReturnValue(true)
     
-    // Rufe Register-Methode auf
+    // Call register method
     await wrapper.vm.register()
     
-    // Überprüfe Fehlermeldung
+    // Check error message
     expect(wrapper.vm.error).toBe('Password is too weak')
     expect(mockRouter.push).not.toHaveBeenCalled()
   })
   
   it('does not submit if form validation fails', async () => {
-    // Mock validateForm, um false zurückzugeben
+    // Mock validateForm to return false
     wrapper.vm.validateForm = jest.fn().mockReturnValue(false)
     
-    // Rufe Register-Methode auf
+    // Call register method
     await wrapper.vm.register()
     
-    // Überprüfe, ob Firebase-Registrierung nicht aufgerufen wurde
+    // Check that Firebase registration was not called
     expect(require('firebase/auth').createUserWithEmailAndPassword).not.toHaveBeenCalled()
     expect(mockRouter.push).not.toHaveBeenCalled()
   })
@@ -229,11 +223,11 @@ describe('RegisterView.vue', () => {
   it('toggles password visibility when clicking eye icon', async () => {
     expect(wrapper.vm.showPassword).toBe(false)
     
-    // Klicke auf das Augen-Icon
+    // Click on the eye icon
     await wrapper.find('.password-toggle').trigger('click')
     expect(wrapper.vm.showPassword).toBe(true)
     
-    // Klicke erneut
+    // Click again
     await wrapper.find('.password-toggle').trigger('click')
     expect(wrapper.vm.showPassword).toBe(false)
   })

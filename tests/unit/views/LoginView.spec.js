@@ -6,14 +6,14 @@ import { nextTick } from 'vue'
 jest.mock('firebase/auth', () => ({
   getAuth: jest.fn(() => ({})),
   signInWithEmailAndPassword: jest.fn((auth, email, password) => {
-    // Mock erfolgreiche Anmeldung für test@example.com/password123
+    // Mock successful login for test@example.com/password123
     if (email === 'test@example.com' && password === 'password123') {
       return Promise.resolve({
         user: { email, uid: 'test-user-id' }
       })
     }
     
-    // Mock Fehler für andere Anmeldedaten
+    // Mock error for other login credentials
     if (email === 'unknown@example.com') {
       return Promise.reject({ code: 'auth/user-not-found' })
     }
@@ -26,7 +26,7 @@ jest.mock('firebase/auth', () => ({
   })
 }))
 
-// Mock für Router
+// Mock for Router
 const mockRouter = {
   push: jest.fn()
 }
@@ -42,10 +42,10 @@ describe('LoginView.vue', () => {
   let wrapper
   
   beforeEach(() => {
-    // Reset Mocks vor jedem Test
+    // Reset mocks before each test
     jest.clearAllMocks()
     
-    // Mount-Komponente mit Mocks
+    // Mount component with mocks
     wrapper = shallowMount(LoginView, {
       global: {
         mocks: {
@@ -64,137 +64,132 @@ describe('LoginView.vue', () => {
     expect(wrapper.find('input[type="password"]').exists()).toBe(true)
     expect(wrapper.find('button[type="submit"]').exists()).toBe(true)
   })
-  
-  it('validates email correctly', async () => {
+    it('validates email correctly', async () => {
     const emailInput = wrapper.find('input[type="email"]')
     
-    // Leere Email
+    // Empty email
     await emailInput.setValue('')
     await emailInput.trigger('blur')
     expect(wrapper.vm.emailError).toBe('Email is required')
     
-    // Ungültige Email
+    // Invalid email
     await emailInput.setValue('invalid-email')
     await emailInput.trigger('blur')
     expect(wrapper.vm.emailError).toBe('Email must be valid')
     
-    // Gültige Email
+    // Valid email
     await emailInput.setValue('test@example.com')
     await emailInput.trigger('blur')
     expect(wrapper.vm.emailError).toBeNull()
   })
-  
-  it('validates password correctly', async () => {
+    it('validates password correctly', async () => {
     const passwordInput = wrapper.find('input[type="password"]')
     
-    // Leeres Passwort
+    // Empty password
     await passwordInput.setValue('')
     await passwordInput.trigger('blur')
     expect(wrapper.vm.passwordError).toBe('Password is required')
     
-    // Zu kurzes Passwort
+    // Password too short
     await passwordInput.setValue('12345')
     await passwordInput.trigger('blur')
     expect(wrapper.vm.passwordError).toBe('Password must be at least 6 characters')
     
-    // Gültiges Passwort
+    // Valid password
     await passwordInput.setValue('123456')
     await passwordInput.trigger('blur')
     expect(wrapper.vm.passwordError).toBeNull()
   })
-  
-  it('toggles password visibility when clicking eye icon', async () => {
+    it('toggles password visibility when clicking eye icon', async () => {
     expect(wrapper.vm.showPassword).toBe(false)
     
-    // Klicke auf das Augen-Icon
+    // Click on the eye icon
     await wrapper.find('.password-toggle').trigger('click')
     expect(wrapper.vm.showPassword).toBe(true)
     
-    // Klicke erneut
+    // Click again
     await wrapper.find('.password-toggle').trigger('click')
     expect(wrapper.vm.showPassword).toBe(false)
   })
-  
-  it('logs in successfully with valid credentials', async () => {
-    // Setze Email und Passwort
+    it('logs in successfully with valid credentials', async () => {
+    // Set email and password
     await wrapper.setData({
       email: 'test@example.com',
       password: 'password123'
     })
-    
-    // Mock validateForm, um true zurückzugeben
+      // Mock validateForm to return true
     wrapper.vm.validateForm = jest.fn().mockReturnValue(true)
     
-    // Rufe Login-Methode auf
+    // Call login method
     await wrapper.vm.login()
     
-    // Überprüfe, ob Router.push aufgerufen wurde
+    // Check if router.push was called
     expect(mockRouter.push).toHaveBeenCalledWith('/')
     expect(wrapper.vm.error).toBeNull()
   })
   
   it('shows "user not found" error with non-existent email', async () => {
-    // Setze Email und Passwort
+    // Set email and password
     await wrapper.setData({
       email: 'unknown@example.com',
       password: 'anypassword'
     })
     
-    // Mock validateForm, um true zurückzugeben
+    // Mock validateForm to return true
     wrapper.vm.validateForm = jest.fn().mockReturnValue(true)
     
-    // Rufe Login-Methode auf
+    // Call login method
     await wrapper.vm.login()
     
-    // Überprüfe die angezeigte Fehlermeldung
+    // Check the displayed error message
     expect(wrapper.vm.error).toBe('No account found with this email')
     expect(mockRouter.push).not.toHaveBeenCalled()
   })
   
   it('shows "invalid password" error with wrong password', async () => {
-    // Setze Email und Passwort
+    // Set email and password
     await wrapper.setData({
       email: 'test@example.com',
       password: 'wrongpassword'
     })
     
-    // Mock validateForm, um true zurückzugeben
+    // Mock validateForm to return true
     wrapper.vm.validateForm = jest.fn().mockReturnValue(true)
     
-    // Rufe Login-Methode auf
+    // Call login method    
     await wrapper.vm.login()
     
-    // Überprüfe die angezeigte Fehlermeldung
+    // Check the displayed error message
     expect(wrapper.vm.error).toBe('Invalid password')
     expect(mockRouter.push).not.toHaveBeenCalled()
   })
   
   it('shows generic error message for other errors', async () => {
-    // Setze Email und Passwort
+    // Set email and password
     await wrapper.setData({
       email: 'error@example.com',
       password: 'errorpassword'
     })
     
-    // Mock validateForm, um true zurückzugeben
+    // Mock validateForm to return true
     wrapper.vm.validateForm = jest.fn().mockReturnValue(true)
     
-    // Rufe Login-Methode auf
+    // Call login method
     await wrapper.vm.login()
     
-    // Überprüfe die angezeigte Fehlermeldung
+    // Check the displayed error message
     expect(wrapper.vm.error).toBe('An error occurred during sign in')
     expect(mockRouter.push).not.toHaveBeenCalled()
   })
   
   it('does not submit if form validation fails', async () => {
-    // Mock validateForm, um false zurückzugeben
+    // Mock validateForm to return false
     wrapper.vm.validateForm = jest.fn().mockReturnValue(false)
     
-    // Rufe Login-Methode auf
+    // Call login method
     await wrapper.vm.login()
     
-    // Überprüfe, ob Firebase-Anmeldung nicht aufgerufen wurde
+    // Check that Firebase sign-in was not called
     expect(require('firebase/auth').signInWithEmailAndPassword).not.toHaveBeenCalled()
     expect(mockRouter.push).not.toHaveBeenCalled()
   })

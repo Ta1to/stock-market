@@ -4,21 +4,20 @@ module.exports = defineConfig({
   e2e: {
     specPattern: 'tests/e2e/**/*.cy.{js,jsx,ts,tsx}',
     baseUrl: 'http://localhost:8080',
-    supportFile: 'tests/e2e/support/index.js',
-    // Beschleunige Tests durch Deaktivierung der Videoaufzeichnung in der Entwicklung
+    supportFile: 'tests/e2e/support/index.js',    // Speed up tests by disabling video recording in development
     video: false,
-    // Reduziere die Verzögerung zwischen Befehlen
+    // Reduce delay between commands
     defaultCommandTimeout: 4000,
-    // Schnelleres Polling für Assertions
+    // Faster polling for assertions
     retries: {
       runMode: 1,
       openMode: 0
     },
-    // Parallelisiere Tests im CI
+    // Parallelize tests in CI
     numTestsKeptInMemory: 5,
-    // Verbesserte Testgeschwindigkeit durch Vermeidung unnötiger Wartezeiten
+    // Improve test speed by avoiding unnecessary waiting times
     experimentalMemoryManagement: true,
-    // Füge Experimentelle Cypress-Funktionen hinzu, die die Testgeschwindigkeit verbessern
+    // Add experimental Cypress features that improve test speed
     experimentalModifyObstructiveThirdPartyCode: true
   },
   component: {

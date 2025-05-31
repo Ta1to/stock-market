@@ -1,28 +1,27 @@
 <template>
-  <div class="game-wrapper">
-    <!--Mini chart for stock data-->
+  <div class="game-wrapper">    <!--Mini chart for stock data-->
     <MiniChart 
-      v-if="gameStore.currentPhase >= 3 && stockData"
-      :stockData="stockData"
+      v-if="gameStore.currentPhase >= 3 && gameStore.stockData"
+      :stockData="gameStore.stockData"
       class="mini-chart"
     />
     <!--news pop Up about stocks in game-->
     <MiniNews
-      v-if="gameStore.currentPhase >= 5 && stockData"
-      :stockData="stockData"
+      v-if="gameStore.currentPhase >= 5 && gameStore.stockData"
+      :stockData="gameStore.stockData"
       class="mini-news"
     />
     <!--technical indicators pop up about stocks in game-->
     <MiniIndicators
-      v-if="gameStore.currentPhase >= 7 && stockData"
-      :stockData="stockData"
+      v-if="gameStore.currentPhase >= 7 && gameStore.stockData"
+      :stockData="gameStore.stockData"
       :roundNumber="gameStore.currentRound"
       class="mini-indicators"
     />
     <!--mini price display-->
     <MiniPrice
-      v-if="gameStore.currentPhase >= 8 && stockData"
-      :stockData="stockData"
+      v-if="gameStore.currentPhase >= 8 && gameStore.stockData"
+      :stockData="gameStore.stockData"
       class="mini-price"
     />
     <div class="game-container">
@@ -42,31 +41,31 @@
       <!-- Error message display -->
       <div v-if="gameStore.errorMessage" class="error-message">
         {{ gameStore.errorMessage }}
-      </div>
-
-      <!-- StockSelector as Modal -->
+      </div>      <!-- StockSelector as Modal -->
       <StockSelector
         :visible="gameStore.currentPhase === 1 && gameStore.currentRound <= gameStore.totalRounds"
         :gameId="route.params.id"
         :roundNumber="gameStore.currentRound"
-        :isCreator="isCreator"
+        :isCreator="gameStore.isCreator"
         @stock-selected="handleStockSelection"
         @phase-complete="handleStockPhaseComplete"
       />
 
       <!-- Stock Prediction Popup -->
       <StockPrediction
-        v-if="stockData"
+        v-if="gameStore.stockData"
         :visible="gameStore.currentPhase === 2"
         :selectedStock="gameStore.selectedStock"
-        :stockData="stockData"
+        :stockData="gameStore.stockData"
         @submit="handlePrediction"
         @close="closePopup"
-      />      <!-- Poker Table with Playercards - Pass current round data instead of just bets -->
+      />      
+      
+      <!-- Poker Table with Playercards - Pass current round data instead of just bets -->
       <PokerTable 
         v-if="gameStore.players.length" 
         :players="gameStore.players" 
-        :currentUserId="currentUserId"
+        :currentUserId="gameStore.currentUserId"
         :currentTurnIndex="gameStore.currentTurnIndex"
         :pot="gameStore.pot"
         :currentRound="gameStore.currentRound"
@@ -75,9 +74,9 @@
 
       <!-- Poker HUD with Bet, Check, Fold buttons -->
       <PokerHUD
-        :coins="currentUserChips"
-        :isMyTurn="isMyTurn"
-        :isBettingDisabled="bettingDisabled"
+        :coins="gameStore.currentUserChips"
+        :isMyTurn="gameStore.isMyTurn"
+        :isBettingDisabled="gameStore.bettingDisabled"
         @bet-placed="handleBet"
         @check="handleCheck"
         @fold="handleFold"
@@ -85,44 +84,44 @@
 
       <!-- stock news pop up-->
       <StockNewsHint
-        v-if="stockData" 
+        v-if="gameStore.stockData" 
         :visible="gameStore.currentPhase === 4"
-        :stockData="stockData"
+        :stockData="gameStore.stockData"
         :roundNumber="gameStore.currentRound"
         @close="handleNewsClose"
       />
 
       <!-- Technical Indicators Popup (Phase 6) -->
       <TechnicalIndicatorsHint
-        v-if="stockData"
+        v-if="gameStore.stockData"
         :visible="gameStore.currentPhase === 6"
-        :stockData="stockData"
+        :stockData="gameStore.stockData"
         :roundNumber="gameStore.currentRound"
         @close="handleIndicatorsClose"
       />
 
       <CurrentPriceHint
-        v-if="stockData"
+        v-if="gameStore.stockData"
         :visible="gameStore.currentPhase === 8"
-        :stockData="stockData"
+        :stockData="gameStore.stockData"
         :roundNumber="gameStore.currentRound"
         @close="handleIndicatorsClose"
       />
 
       <!-- Round Winner Popup (Phase 10) -->
       <RoundWinner
-        v-if="roundWinner"
+        v-if="gameStore.roundWinner"
         :visible="gameStore.currentPhase === 10"
-        :winner="roundWinner"
+        :winner="gameStore.roundWinner"
         :roundNumber="gameStore.currentRound"
-        :pot="roundPot"
+        :pot="gameStore.roundPot"
         :totalRounds="gameStore.totalRounds"
         @continue="handleWinnerContinue"
       />
 
       <!-- Game Winner (after final round) -->
       <GameWinner
-        :visible="showGameWinner || (gameStore.currentRound > gameStore.totalRounds && gameStore.players.length)"
+        :visible="gameStore.showGameWinner || (gameStore.currentRound > gameStore.totalRounds && gameStore.players.length)"
         :players="gameStore.players"
         :gameId="route.params.id"
         :onGameEnd="handleGameEnd"
@@ -133,13 +132,9 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { auth, db } from '@/api/firebase-api';
-import { onAuthStateChanged } from 'firebase/auth';
 import { useGameStore } from '@/services/game-store.js';
-import { PopupState } from '@/utils/popupEventBus';
-import { doc, deleteDoc } from 'firebase/firestore';
 
 /* Components */
 import PokerTable from '@/components/game/PokerTable.vue';
@@ -172,256 +167,90 @@ export default {
     MiniPrice,
     RoundWinner,
     GameWinner
-  },
-  setup() {
+  },  setup() {
     const route = useRoute();
-    // eslint-disable-next-line no-unused-vars
     const router = useRouter();
     const gameStore = useGameStore();
-    let errorTimeout = null;
-    let unsubscribeAuth = null; // Define here so it's accessible in onUnmounted
-
-    // Reactive ref for the current logged-in user
-    const currentUser = ref(null);
 
     // Local state for popup
     const showPopup = ref(false);
-    const prediction = ref(null);
-
-    const roundWinner = ref(null);
-    const roundPot = ref(0);
-    
-    // Game winner state
-    const showGameWinner = ref(false);
-
-    // Top-level computed for current user chips
-    const currentUserChips = computed(() => {
-      if (!currentUser.value || !gameStore.players.length) return 0;
-      const player = gameStore.players.find(p => p.uid === currentUser.value.uid);
-      return player.chips;
-    });
-
-    const stockData = computed(() => {
-      const currentRound = gameStore.currentRound;
-      const roundData = gameStore.rounds?.[currentRound];
-            
-      if (!roundData?.stocks?.[0]) {
-        console.warn("No stocks data available for current round");
-        return null;
-      }
-
-      const stockDetails = roundData.stocks[0];
-      if (!stockDetails.history) {
-        console.warn("Stock history not available or not in correct format");
-        return null;
-      }
-
-      return {
-        name: stockDetails.name,
-        symbol: stockDetails.symbol,
-        description: stockDetails.description,
-        sector: stockDetails.sector, 
-        industry: stockDetails.industry,
-        website: stockDetails.website,
-        dates: stockDetails.history.map(entry => entry.date),
-        prices: stockDetails.history.map(entry => entry.price),
-        news: stockDetails.news || [], 
-        technicalIndicators: stockDetails.technicalIndicators || null
-      };
+    const prediction = ref(null);    // Watch for error message changes (handled by store now)
+    watch(() => gameStore.errorMessage, () => {
+      // Error timeout is now handled by the store
     });
     
-    const isCreator = computed(() => currentUser.value?.uid === gameStore.creator);
-
-    // Computed property to determine if it's the current user's turn
-    const isMyTurn = computed(() => {
-      if (!currentUser.value || !gameStore.players.length) {
-        return false;
-      }
-      const currentPlayer = gameStore.players[gameStore.currentTurnIndex];
-      // Adjust property names (uid or id) as needed:
-      return currentUser.value.uid === currentPlayer.uid;
+    // Watch for phase changes
+    watch(() => gameStore.currentPhase, async (newPhase) => {
+      await gameStore.handlePhaseChange(newPhase);
     });
-
-    const currentUserId = computed(() => {
-      return currentUser.value ? currentUser.value.uid : '';
-    });
-
-    // Computed property for the current turn player's data&& gameStore.currentPhase !== 9;
-    const currentTurnPlayer = computed(() => {
-      if (!gameStore.players.length) return {};
-      return gameStore.players[gameStore.currentTurnIndex];
-    });
-
-    // Updated computed prop to disable betting in non-betting phases
-    const bettingDisabled = computed(() => {
-      return gameStore.currentPhase !== 3 && gameStore.currentPhase !== 5 && gameStore.currentPhase !== 7 && gameStore.currentPhase !== 9;
-    });
-
-    // Watch for error message changes and auto-dismiss after timeout
-    watch(() => gameStore.errorMessage, (newMessage) => {
-      // Clear any existing timeout
-      if (errorTimeout) {
-        clearTimeout(errorTimeout);
-        errorTimeout = null;
-      }
-      
-      // If there's a new error message, set a timeout to clear it
-      if (newMessage) {
-        errorTimeout = setTimeout(() => {
-          gameStore.errorMessage = null;
-        }, 5000); // 5 seconds
-      }
-    });    watch(() => gameStore.currentPhase, async (newPhase) => {
-      // close all popups when phase changes
-      PopupState.activePopup = null;
-
-      // If phase changes to 10, determine the round winner
-      if (newPhase === 10) {
-        // Determine winner based on the active players
-        const activePlayers = gameStore.players.filter((p) => !gameStore.folds[p.uid]);
-        
-        // Save the current pot amount before any changes - verwende den aktuellen Pot
-        // Dieser wurde während der Phasen akkumuliert und nicht zurückgesetzt
-        roundPot.value = gameStore.pot;
-        console.log('Final pot amount for round winner:', gameStore.pot);
-        
-        if (activePlayers.length === 1) {
-          // Only one player left (others folded)
-          roundWinner.value = activePlayers[0];
-          // Add pot to winner's chips
-          gameStore.addChipsToPlayer(roundWinner.value.uid, gameStore.pot);
-        } else {
-          // Multiple players remain - determine winner by prediction accuracy
-          const currentPrice = stockData.value?.prices[stockData.value.prices.length - 1] || 0;
-          
-          let closestPlayers = [];
-          let smallestDifference = Infinity;
-          
-          // Find player(s) with closest prediction
-          activePlayers.forEach(player => {
-            const prediction = gameStore.predictions[player.uid];
-            if (prediction !== undefined) {
-              const difference = Math.abs(prediction - currentPrice);
-              
-              // If this player has a better prediction than current best
-              if (difference < smallestDifference) {
-                smallestDifference = difference;
-                closestPlayers = [player]; // Reset the array with only this player
-              } 
-              // If this player has the same prediction accuracy as current best
-              else if (difference === smallestDifference) {
-                closestPlayers.push(player); // Add this player to the winners
-              }
-            }
-          });
-          
-          // If multiple players have the same prediction accuracy (tie)
-          if (closestPlayers.length > 1) {
-            // Create a combined winner object indicating a tie and listing winners
-            roundWinner.value = {
-              isTie: true,
-              players: closestPlayers,
-              name: closestPlayers.map(p => p.name).join(', '),
-              // Include a message about the pot being split
-              message: `Tie! The pot will be split among ${closestPlayers.length} players.`
-            };
-            
-            // Split the pot equally among tied players
-            const splitAmount = Math.floor(gameStore.pot / closestPlayers.length);
-            
-            // Distribute chips to each winner
-            closestPlayers.forEach(player => {
-              gameStore.addChipsToPlayer(player.uid, splitAmount);
-            });
-          } else if (closestPlayers.length === 1) {
-            // Single winner
-            roundWinner.value = closestPlayers[0];
-            // Add pot to winner's chips
-            gameStore.addChipsToPlayer(roundWinner.value.uid, gameStore.pot);
-          } else {
-            console.warn("No winner could be determined - no valid predictions found");
-          }
-        }
-        
-        // Reset the pot for the next round after all chips have been distributed
-        gameStore.resetPot();
-      }
-    });
-    
-    // Watch for final round completion
+      // Watch for round changes
     watch(() => gameStore.currentRound, (newRound) => {
-      if (newRound > gameStore.totalRounds) {
-        showGameWinner.value = true;
+      gameStore.handleRoundChange(newRound);
+    });
+
+    // Watch for game end - redirect all players when game is ended
+    watch(() => gameStore.gameEnded, (gameEnded) => {
+      if (gameEnded) {
+        console.log("Game ended detected, redirecting to lobby");
+        router.push('/');
       }
     });
 
     onMounted(() => {
-      unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-        currentUser.value = user;
-        if (user) {
-          const gameId = route.params.id;
-          gameStore.subscribeToGame(gameId);
-          setTimeout(() => 1000);
-        }
-      });
+      const gameId = route.params.id;
+      gameStore.initializeAuth(gameId);
     });
 
     onUnmounted(() => {
-      // Clear any active timeout when unmounting
-      if (errorTimeout) {
-        clearTimeout(errorTimeout);
-      }
-      
-      // Unsubscribe from auth state changes
-      if (unsubscribeAuth) {
-        unsubscribeAuth();
-      }
-      
-      gameStore.unsubscribeFromGame();
+      gameStore.cleanup();
     });
 
+    // Popup functions
     function openPopup() {
       showPopup.value = true;
     }
+    
     function closePopup() {
       showPopup.value = false;
     }
+    
     function handlePrediction(value) {
-      if (!currentUser.value) return;
-      const playerId = currentUser.value.uid;
+      if (!gameStore.currentUser) return;
+      const playerId = gameStore.currentUser.uid;
       gameStore.setPlayerPrediction(playerId, value);
       closePopup();
     }
 
-    /* Betting logic */
+    // Betting functions
     function handleBet(amount) {
-      if (!currentUser.value) return;
-      const playerId = currentUser.value.uid;
+      if (!gameStore.currentUser) return;
+      const playerId = gameStore.currentUser.uid;
       gameStore.placeBet(playerId, amount);
     }
+    
     function handleCheck() {
-      if (!currentUser.value) return;
-      const playerId = currentUser.value.uid;
+      if (!gameStore.currentUser) return;
+      const playerId = gameStore.currentUser.uid;
       gameStore.placeBet(playerId, 0);
     }
+    
     function handleFold() {
-      if (!currentUser.value) return;
-      const playerId = currentUser.value.uid;
+      if (!gameStore.currentUser) return;
+      const playerId = gameStore.currentUser.uid;
       gameStore.fold(playerId);
     }
 
-    //close news popup and move to next phase
+    // Phase transition functions
     function handleNewsClose() {
       gameStore.nextPhase();
     }
 
-    // Close technical indicators popup and move to next phase
     function handleIndicatorsClose() {
       gameStore.nextPhase();
     }
   
     async function handleStockSelection(stock) {
-      if (!isCreator.value) return;
+      if (!gameStore.isCreator) return;
       gameStore.setSelectedStock(stock);
     }
 
@@ -432,37 +261,18 @@ export default {
       await gameStore.nextPhase();
     }
 
-    // Handler for when the entire game ends
+    // Game end function
     async function handleGameEnd() {
-      try {
-        // Delete the game from Firestore
-        const gameId = route.params.id;
-        await deleteDoc(doc(db, "games", gameId));
-        
-        // Reset game store
-        gameStore.resetGame();
-        
-        // Navigation will be handled by the GameWinner component
-      } catch (error) {
-        console.error("Error deleting game:", error);
-      }
+      const gameId = route.params.id;
+      await gameStore.handleGameEnd(gameId);
     }
 
-    // Handler for when user clicks continue on the winner popup
+    // Winner continue function
     function handleWinnerContinue() {
-      // If this was the final round, show the game winner
-      if (gameStore.currentRound >= gameStore.totalRounds) {
-        showGameWinner.value = true;
-        // Prevent moving to the next phase/round which would trigger StockSelector
-        return; 
-      } else {
-        // Otherwise, move to the next round
-        gameStore.nextPhase();
-      }
+      gameStore.handleWinnerContinue();
     }
 
     return {
-      currentUser,
       gameStore,
       showPopup,
       openPopup,
@@ -472,22 +282,12 @@ export default {
       handleBet,
       handleCheck,
       handleFold,
-      isCreator,
       handleStockSelection,
       route, 
       handleStockPhaseComplete,
-      isMyTurn,
-      currentTurnPlayer,
-      currentUserId, 
-      stockData,
-      currentUserChips,
-      bettingDisabled, 
       handleNewsClose, 
       handleIndicatorsClose,
-      roundWinner,
-      roundPot,
       handleWinnerContinue,
-      showGameWinner,
       handleGameEnd
     };
   },

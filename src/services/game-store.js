@@ -4,6 +4,9 @@
  * Provides reactivity, persistence, and synchronization with Firebase
  */
 import { defineStore } from 'pinia';
+import { auth } from '@/api/firebase-api';
+import { onAuthStateChanged } from 'firebase/auth';
+import { PopupState } from '@/utils/popupEventBus';
 
 // Import database functions for game state persistence
 import {
@@ -21,6 +24,7 @@ import {
   addLogEntry as dbAddLogEntry,
   getPlayerBet as dbGetPlayerBet,
   updateData, // Used to initialize round structure in database
+  deleteData, // Used to delete game from database
 } from './game-database';
 
 
@@ -28,8 +32,7 @@ export const useGameStore = defineStore('game', {
   /**
    * State contains all reactive game data
    * All properties are synchronized with Firebase
-   */
-  state: () => ({
+   */  state: () => ({
     currentRound: 1,
     currentPhase: 1,
     totalRounds: 3,
@@ -44,24 +47,122 @@ export const useGameStore = defineStore('game', {
     bets: {},
     folds: {},
     highestBet: 0,
-    pot: 0,
-
-    rounds: {},
+    pot: 0,    rounds: {},
 
     unsubscribers: [],
+    unsubscribeGame: null, // Specific subscription for game data
 
     // Identifies the player whose turn it is (initially set to 0 => player 1)
     currentTurnIndex: 0,
     errorMessage: null, // Holds error messages for UI display
     selectedStock: null, // Selected stock symbol for the current round
+    
+    // Authentication state
+    currentUser: null,
+      // Round winner state
+    roundWinner: null,
+    roundPot: 0,
+    showGameWinner: false,
+    
+    // Game end state
+    gameEnded: false,
+    
+    // Error handling
+    errorTimeout: null,
+    unsubscribeAuth: null,
   }),
-
   getters: {
     /**
      * Determines if the game has reached its conclusion
      * @returns {boolean} True if all rounds have been completed
      */
     isGameComplete: (state) => state.currentRound > state.totalRounds,
+    
+    /**
+     * Get current user's chips
+     * @returns {number} Current user's chip count
+     */
+    currentUserChips: (state) => {
+      if (!state.currentUser || !state.players.length) return 0;
+      const player = state.players.find(p => p.uid === state.currentUser.uid);
+      return player ? player.chips : 0;
+    },
+    
+    /**
+     * Get formatted stock data for the current round
+     * @returns {object|null} Formatted stock data or null if not available
+     */
+    stockData: (state) => {
+      const currentRound = state.currentRound;
+      const roundData = state.rounds?.[currentRound];
+            
+      if (!roundData?.stocks?.[0]) {
+        console.warn("No stocks data available for current round");
+        return null;
+      }
+
+      const stockDetails = roundData.stocks[0];
+      if (!stockDetails.history) {
+        console.warn("Stock history not available or not in correct format");
+        return null;
+      }
+
+      return {
+        name: stockDetails.name,
+        symbol: stockDetails.symbol,
+        description: stockDetails.description,
+        sector: stockDetails.sector, 
+        industry: stockDetails.industry,
+        website: stockDetails.website,
+        dates: stockDetails.history.map(entry => entry.date),
+        prices: stockDetails.history.map(entry => entry.price),
+        news: stockDetails.news || [], 
+        technicalIndicators: stockDetails.technicalIndicators || null
+      };
+    },
+    
+    /**
+     * Check if current user is the game creator
+     * @returns {boolean} True if current user is creator
+     */
+    isCreator: (state) => state.currentUser?.uid === state.creator,
+    
+    /**
+     * Check if it's the current user's turn
+     * @returns {boolean} True if it's current user's turn
+     */
+    isMyTurn: (state) => {
+      if (!state.currentUser || !state.players.length) {
+        return false;
+      }
+      const currentPlayer = state.players[state.currentTurnIndex];
+      return state.currentUser.uid === currentPlayer.uid;
+    },
+    
+    /**
+     * Get current user ID
+     * @returns {string} Current user ID or empty string
+     */
+    currentUserId: (state) => {
+      return state.currentUser ? state.currentUser.uid : '';
+    },
+    
+    /**
+     * Get current turn player data
+     * @returns {object} Current turn player data or empty object
+     */
+    currentTurnPlayer: (state) => {
+      if (!state.players.length) return {};
+      return state.players[state.currentTurnIndex];
+    },
+    
+    /**
+     * Check if betting is disabled in current phase
+     * @returns {boolean} True if betting is disabled
+     */
+    bettingDisabled: (state) => {
+      return state.currentPhase !== 3 && state.currentPhase !== 5 && state.currentPhase !== 7 && state.currentPhase !== 9;
+    },
   },
 
   actions: {
@@ -69,38 +170,45 @@ export const useGameStore = defineStore('game', {
      * Subscribe to the realtime data for this game from Firebase
      * Updates local state whenever remote data changes
      * @param {string} gameId - Unique identifier for the game
-     */
-    async subscribeToGame(gameId) {
-      this.gameId = gameId;
-      const unsub = subscribeToGameData(gameId, (data) => {
+     */    async subscribeToGame(gameId) {
+      this.gameId = gameId;      const unsub = subscribeToGameData(gameId, (data) => {
         if (!data) {
-          console.warn("Game not found or no data at this path");
+          console.warn("Game not found or no data at this path - game may have been deleted");
+          // Game has been deleted, redirect all players to lobby
+          this.gameEnded = true;
+          import('@/router').then(({ default: router }) => {
+            router.push('/');
+          });
           return;
         }
-        console.log("Game data received");
-
         // Update the game state with the received data
         this.creator = data.creator;
         this.currentRound = data.currentRound || data.round || 1;
         this.currentPhase = (data.rounds && data.rounds[this.currentRound] && data.rounds[this.currentRound].phase) || data.phase || 1;
         this.players = data.players || [];
+        
+        // Safe access to round data with null checks
+        const currentRoundData = data.rounds && data.rounds[this.currentRound] ? data.rounds[this.currentRound] : {};
+        
         // New addition: sync the pot from the database
-        this.pot = data.rounds[this.currentRound].pot || 0;
+        this.pot = currentRoundData.pot || 0;
         // NEW: Sync highestBet from database
-        this.highestBet = data.rounds[this.currentRound].highestBet || 0;
+        this.highestBet = currentRoundData.highestBet || 0;
         this.rounds = data.rounds || {}; 
         this.rounds = { ...this.rounds, ...data.rounds };
         
         // Replace merging with direct assignment:
-        const incomingPredictions =
-          data.rounds && data.rounds[this.currentRound] && data.rounds[this.currentRound].predictions
-            ? data.rounds[this.currentRound].predictions
-            : {};
-        this.predictions = incomingPredictions;
-    
-        // NEW: Retrieve selectedStock from the current round's data in the database.
-        const roundData = data.rounds ? data.rounds[this.currentRound] : null;
-        this.selectedStock = roundData && roundData.selectedStock !== undefined ? roundData.selectedStock : null;
+        const incomingPredictions = currentRoundData.predictions || {};
+        this.predictions = incomingPredictions;        // NEW: Retrieve selectedStock from the current round's data in the database.
+        this.selectedStock = currentRoundData.selectedStock !== undefined ? currentRoundData.selectedStock : null;        // Check if game has ended
+        if (data.gameEnded) {
+          this.gameEnded = true;
+          // Import router to navigate
+          import('@/router').then(({ default: router }) => {
+            router.push('/');
+          });
+          return;
+        }
     
         // Set the turn index from the database, if available. Otherwise, default to 0.
         if (data.currentTurnIndex !== undefined) {
@@ -109,6 +217,8 @@ export const useGameStore = defineStore('game', {
           this.currentTurnIndex = 0;
         }
       });
+      
+      this.unsubscribeGame = unsub;
       this.unsubscribers.push(unsub);
     },
 
@@ -146,11 +256,9 @@ export const useGameStore = defineStore('game', {
 
       if (currentPhase < totalPhases) {
         newPhase = currentPhase + 1;
-      } else {
-        // New round: reset selectedStock so the creator can choose stock for new round
+      } else {        // New round: reset selectedStock so the creator can choose stock for new round
         newRound = currentRound + 1;
         newPhase = 1;
-        console.log(`Advancing to new round ${newRound}; resetting selectedStock.`);
         this.selectedStock = null;
 
         // Reset predictions when starting a new round:
@@ -173,10 +281,8 @@ export const useGameStore = defineStore('game', {
       if (newRound > currentRound) {
         this.pot = 0;
       }
-      
-      this.currentRound = newRound;
+        this.currentRound = newRound;
       this.currentPhase = newPhase;
-      console.log(`Updated state: round ${this.currentRound}, phase ${this.currentPhase}, pot: ${this.pot}.`);
     },
 
     /**
@@ -185,12 +291,10 @@ export const useGameStore = defineStore('game', {
      */
     async startStockSelection(gameId) {
       if (!this.gameId) return;
-      
-      try {
+        try {
         if (this.currentPhase !== 1) {
           await updateRoundPhase(this.gameId, this.currentRound, 1);
         }
-        console.log('Stock selection started for game:', gameId);
       } catch (error) {
         console.error('Error in startStockSelection:', error);
         throw error;
@@ -212,18 +316,13 @@ export const useGameStore = defineStore('game', {
       }
       
       await dbSetPlayerPrediction(this.gameId, this.currentRound, playerId, price);
-      
-      // Immediately update the local state.
+        // Immediately update the local state.
       this.predictions[playerId] = price;
-      console.log("Prediction set, current predictions:", this.predictions);
       
       // Check if every player has predicted.
       const allPredicted = this.players.every(p => this.predictions[p.uid] !== undefined);
       if (this.currentPhase === 2 && allPredicted) {
-        console.log("All players predicted.");
         await this.nextPhase();
-      } else {
-        console.log("Not all players predicted yet, remaining in phase 2");
       }
     },
       
@@ -257,8 +356,6 @@ export const useGameStore = defineStore('game', {
         console.warn("It's not your turn!", currentPlayer.id, playerId);
         return;
       }
-    
-      // Get current player chips
       const currentChips = player.chips;
       
       if (currentChips < amount) {
@@ -269,10 +366,9 @@ export const useGameStore = defineStore('game', {
       // Retrieve the player's existing bet (if any)
       const oldBet = await dbGetPlayerBet(this.gameId, this.currentRound, playerId);
       const newBet = oldBet + amount;
-      
-      // Bet validation with error message visible on screen
+        // Bet validation with error message visible on screen
       if (this.highestBet > 0 && newBet < this.highestBet) {
-        this.errorMessage = `Bet must be at least equal to the highest bet of ${this.highestBet}`;
+        this.setErrorMessage(`Bet must be at least equal to the highest bet of ${this.highestBet}`);
         return;
       }
       
@@ -282,37 +378,26 @@ export const useGameStore = defineStore('game', {
       // Calculate new chip amount
       const newChipsAmount = currentChips - amount;
     
-      try {
-        // Update the bet in the database
-        await dbPlaceBet(this.gameId, this.currentRound, playerId, newBet);
+      try {        await dbPlaceBet(this.gameId, this.currentRound, playerId, newBet);
         
-        // Update the player's chips in the database
         await updatePlayerChips(this.gameId, playerId, newChipsAmount);
-    
-        // Update local state
+
         this.bets[playerId] = newBet;
         
-        // Update the player's chips in local state
         this.players = this.players.map(p => {
           if (p.uid === playerId) {
             return { ...p, chips: newChipsAmount };
           }
           return p;
-        });
-    
-        // Update highestBet if necessary
-        if (newBet > this.highestBet) {
+        });        if (newBet > this.highestBet) {
           this.highestBet = newBet;
           updateHighestBet(this.gameId, this.currentRound ,this.highestBet);
         }
     
         // Immediately update the pot with this bet amount
         this.pot += amount;
-        await updatePot(this.gameId, this.currentRound, this.pot);
-    
-        const bettingComplete = await this.checkBettingStatus();
+        await updatePot(this.gameId, this.currentRound, this.pot);        const bettingComplete = await this.checkBettingStatus();
         if (bettingComplete) {
-          console.log("Betting round complete, moving to next phase.");
           await this.nextPhase();
         } else {
           this.moveToNextTurn();
@@ -329,12 +414,10 @@ export const useGameStore = defineStore('game', {
      * @param {string} playerId - Unique identifier for the player
      */
     async fold(playerId) {
-      if (!this.gameId) return;
-
-      // Allow folding only in phases 3, 5, and 7 the betting phases
+      if (!this.gameId) return;      // Allow folding only in phases 3, 5, and 7 the betting phases
       if (this.currentPhase !== 3 && this.currentPhase !== 5 && this.currentPhase !== 7 && this.currentPhase !== 9) {
         console.warn('Folding not allowed outside betting phases!', this.currentPhase);
-        this.errorMessage = 'Folding is only allowed during betting phases!';
+        this.setErrorMessage('Folding is only allowed during betting phases!');
         return;
       }
 
@@ -348,27 +431,17 @@ export const useGameStore = defineStore('game', {
      * Check if all players have placed bets or folded
      * Determines if betting round is complete and handles single player scenarios
      * @returns {Promise<boolean>} True if betting round is complete, false if still ongoing
-     */
-    async checkBettingStatus() {
-      console.log('Checking betting status...');
-
+     */    async checkBettingStatus() {
       // Only check betting status in phases 3, 5, and 7
       if (this.currentPhase !== 3 && this.currentPhase !== 5 && this.currentPhase !== 7 && this.currentPhase !== 9) {
-        console.log("Not in a betting phase, skipping check");
         return false;
       }
 
-      const activePlayers = this.players.filter((p) => !this.folds[p.uid]);
-
-      // If only one player remains, award the pot, reset pot and highestBet, and end the round.
+      const activePlayers = this.players.filter((p) => !this.folds[p.uid]);      // If only one player remains, award the pot, reset pot and highestBet, and end the round.
       if (activePlayers.length <= 1) {
-          console.log('Only one player left, awarding pot and ending round.');
-          const winner = activePlayers[0];
-          // Award the pot to the winner: update the winner's chips.
-          const newChips = winner.chips + this.pot;
+          const winner = activePlayers[0];          const newChips = winner.chips + this.pot;
           await updatePlayerChips(this.gameId, winner.uid, newChips);
           
-          // Update local state: reflect the changed chips for the winner.
           this.players = this.players.map(p => {
             if (p.uid === winner.uid) {
               return { ...p, chips: newChips };
@@ -387,12 +460,9 @@ export const useGameStore = defineStore('game', {
             phase: 1,
             isSpinning: false
           });
-          
-          // Advance to next round in DB.
-          await updateCurrentRound(this.gameId, newRound);
+            await updateCurrentRound(this.gameId, newRound);
           await updateRoundPhase(this.gameId, newRound, 1);
           
-          // Update local state accordingly.
           this.currentRound = newRound;
           this.currentPhase = 1;
           this.bets = {};
@@ -406,12 +476,9 @@ export const useGameStore = defineStore('game', {
               const bet = await dbGetPlayerBet(this.gameId, this.currentRound, p.uid);
               return { playerId: p.uid, bet };
           })
-      );
-
-      const allMatchedHighest = playerBets.every((pb) => pb.bet === this.highestBet);
+      );      const allMatchedHighest = playerBets.every((pb) => pb.bet === this.highestBet);
 
       if (allMatchedHighest) {
-          console.log('All players placed matching bets. Pot is:', this.pot);
           return true;
       }
 
@@ -470,19 +537,13 @@ export const useGameStore = defineStore('game', {
       // Calculate new chip amount
       const newChipsAmount = player.chips + amount;
       
-      try {
-        // Update the player's chips in the database
-        await updatePlayerChips(this.gameId, playerId, newChipsAmount);
-        
-        // Update local state: reflect the changed chips for the player
-        this.players = this.players.map(p => {
+      try {        await updatePlayerChips(this.gameId, playerId, newChipsAmount);
+          this.players = this.players.map(p => {
           if (p.uid === playerId) {
             return { ...p, chips: newChipsAmount };
           }
           return p;
         });
-        
-        console.log(`Added ${amount} chips to player ${playerId}. New balance: ${newChipsAmount}`);
       } catch (error) {
         console.error("Error adding chips to player:", error);
         throw error;
@@ -496,16 +557,217 @@ export const useGameStore = defineStore('game', {
       if (!this.gameId) return;
       this.pot = 0;
       await updatePot(this.gameId, this.currentRound, 0);
-    },
-
-    /**
+    },    /**
      * Sets the selected stock for the current round
      * Used during stock selection phase
      * @param {object} stock - Stock object containing symbol and name
-     */
-    setSelectedStock(stock) {
-      console.log("setSelectedStock called with:", stock);
+     */    setSelectedStock(stock) {
       this.selectedStock = stock;
+    },
+    
+    /**
+     * Initialize authentication state and game subscription
+     * @param {string} gameId - Game ID to subscribe to
+     */
+    async initializeAuth(gameId) {
+      this.unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+        this.currentUser = user;
+        if (user) {
+          this.subscribeToGame(gameId);
+        }
+      });
+    },
+    
+    /**
+     * Handle error message with auto-dismiss timeout
+     * @param {string} message - Error message to display
+     */
+    setErrorMessage(message) {
+      // Clear any existing timeout
+      if (this.errorTimeout) {
+        clearTimeout(this.errorTimeout);
+        this.errorTimeout = null;
+      }
+      
+      this.errorMessage = message;
+      
+      // If there's a new error message, set a timeout to clear it
+      if (message) {
+        this.errorTimeout = setTimeout(() => {
+          this.errorMessage = null;
+        }, 5000); // 5 seconds
+      }
+    },
+    
+    /**
+     * Handle phase change and determine round winner
+     * @param {number} newPhase - The new phase number
+     */
+    async handlePhaseChange(newPhase) {
+      // close all popups when phase changes
+      PopupState.activePopup = null;
+
+      // If phase changes to 10, determine the round winner
+      if (newPhase === 10) {
+        await this.determineRoundWinner();
+      }
+    },
+    
+    /**
+     * Determine the winner of the current round
+     */
+    async determineRoundWinner() {
+      // Determine winner based on the active players
+      const activePlayers = this.players.filter((p) => !this.folds[p.uid]);
+        // Save the current pot amount before any changes
+      this.roundPot = this.pot;
+      
+      if (activePlayers.length === 1) {
+        // Only one player left (others folded)
+        this.roundWinner = activePlayers[0];
+        // Add pot to winner's chips
+        await this.addChipsToPlayer(this.roundWinner.uid, this.pot);
+      } else if (activePlayers.length > 1) {
+        // Multiple players remain - determine winner by prediction accuracy
+        const currentPrice = this.stockData?.prices[this.stockData.prices.length - 1] || 0;
+        
+        let closestPlayers = [];
+        let smallestDifference = Infinity;
+        
+        // Find player(s) with closest prediction
+        activePlayers.forEach(player => {
+          const prediction = this.predictions[player.uid];
+          if (prediction !== undefined) {
+            const difference = Math.abs(prediction - currentPrice);
+              if (difference < smallestDifference) {
+              smallestDifference = difference;
+              closestPlayers = [player];
+            }            else if (difference === smallestDifference) {
+              closestPlayers.push(player);
+            }
+          }
+        });
+          if (closestPlayers.length > 1) {
+          this.roundWinner = {
+            isTie: true,
+            players: closestPlayers,
+            name: closestPlayers.map(p => p.name).join(', '),
+            message: `Tie! The pot will be split among ${closestPlayers.length} players.`
+          };
+          
+          const splitAmount = Math.floor(this.pot / closestPlayers.length);
+          
+          for (const player of closestPlayers) {
+            await this.addChipsToPlayer(player.uid, splitAmount);
+          }        } else if (closestPlayers.length === 1) {
+          this.roundWinner = closestPlayers[0];
+          await this.addChipsToPlayer(this.roundWinner.uid, this.pot);
+        } else {
+          console.warn("No winner could be determined - no valid predictions found");
+        }
+      }
+      
+      // Reset the pot for the next round after all chips have been distributed
+      await this.resetPot();
+    },
+    
+    /**
+     * Handle round change and check for game completion
+     * @param {number} newRound - The new round number
+     */
+    handleRoundChange(newRound) {
+      if (newRound > this.totalRounds) {
+        this.showGameWinner = true;
+      }
+    },    /**
+     * Handle game end - mark game as ended for all players
+     * @param {string} gameId - Game ID to mark as ended
+     */
+    async handleGameEnd(gameId) {
+      try {
+        // Mark the game as ended in the database so all players get notified
+        await updateData(`games/${gameId}`, {
+          gameEnded: true,
+          endedAt: Date.now()
+        });
+        
+        // Schedule game deletion after all players have had time to see the end screen
+        setTimeout(async () => {
+          try {
+            await deleteData(`games/${gameId}`);
+          } catch (error) {
+            console.error("Error deleting game:", error);
+          }
+        }, 35000); // 35 seconds - slightly longer than the countdown timer
+        
+      } catch (error) {
+        console.error("Error marking game as ended:", error);
+        throw error;
+      }
+    },
+    
+    /**
+     * Handle winner continue action
+     */
+    async handleWinnerContinue() {
+      // If this was the final round, show the game winner
+      if (this.currentRound >= this.totalRounds) {
+        this.showGameWinner = true;
+        // Prevent moving to the next phase/round which would trigger StockSelector
+        return; 
+      } else {
+        // Otherwise, move to the next round
+        await this.nextPhase();
+      }
+    },
+    
+    /**
+     * Reset all game state
+     */
+    resetGame() {
+      this.currentRound = 1;
+      this.currentPhase = 1;
+      this.gameId = null;
+      this.creator = null;
+      this.players = [];
+      this.predictions = {};
+      this.bets = {};
+      this.folds = {};
+      this.highestBet = 0;
+      this.pot = 0;
+      this.rounds = {};
+      this.currentTurnIndex = 0;
+      this.errorMessage = null;      this.selectedStock = null;
+      this.currentUser = null;
+      this.gameEnded = false;      this.roundWinner = null;
+      this.roundPot = 0;
+      this.showGameWinner = false;
+      this.unsubscribeGame = null;
+      
+      // Clear timeouts
+      if (this.errorTimeout) {
+        clearTimeout(this.errorTimeout);
+        this.errorTimeout = null;
+      }
+    },
+    
+    /**
+     * Clean up subscriptions and timeouts
+     */
+    cleanup() {
+      // Clear any active timeout
+      if (this.errorTimeout) {
+        clearTimeout(this.errorTimeout);
+        this.errorTimeout = null;
+      }
+      
+      // Unsubscribe from auth state changes
+      if (this.unsubscribeAuth) {
+        this.unsubscribeAuth();
+        this.unsubscribeAuth = null;
+      }
+      
+      this.unsubscribeFromGame();
     },
   },
 });

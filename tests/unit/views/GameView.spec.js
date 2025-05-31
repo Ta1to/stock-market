@@ -1,6 +1,6 @@
-// Minimaler Test für GameView.vue
+// Minimal test for GameView.vue
 
-// Mock Firebase und andere Abhängigkeiten
+// Mock Firebase and other dependencies
 jest.mock('@/api/firebase-api', () => ({
   auth: {
     currentUser: { uid: 'user123' }
@@ -8,10 +8,9 @@ jest.mock('@/api/firebase-api', () => ({
   db: {}
 }));
 
-jest.mock('firebase/auth', () => ({
-  onAuthStateChanged: jest.fn(auth => callback => {
+jest.mock('firebase/auth', () => ({  onAuthStateChanged: jest.fn(auth => callback => {
     callback({ uid: 'user123' });
-    return jest.fn(); // Unsubscribe-Funktion
+    return jest.fn(); // Unsubscribe function
   })
 }));
 
@@ -20,7 +19,7 @@ jest.mock('firebase/firestore', () => ({
   deleteDoc: jest.fn(() => Promise.resolve())
 }));
 
-// Mock für GameStore
+// Mock for GameStore
 const mockGameStore = {
   currentRound: 1,
   totalRounds: 3,
@@ -28,8 +27,18 @@ const mockGameStore = {
   players: [{ uid: 'user123', name: 'Test User' }],
   currentTurnIndex: 0,
   pot: 100,
+  gameEnded: false,
+  showGameWinner: false,
+  errorMessage: null,
   subscribeToGame: jest.fn(),
   unsubscribeFromGame: jest.fn(),
+  initializeAuth: jest.fn(),
+  cleanup: jest.fn(),
+  resetGame: jest.fn(),
+  handleGameEnd: jest.fn(),
+  nextPhase: jest.fn(),
+  handlePhaseChange: jest.fn(),
+  handleRoundChange: jest.fn(),
   rounds: {}
 };
 
@@ -37,7 +46,7 @@ jest.mock('@/services/game-store', () => ({
   useGameStore: () => mockGameStore
 }));
 
-// Mock für Vue Router
+// Mock for Vue Router
 jest.mock('vue-router', () => ({
   useRoute: () => ({
     params: {
@@ -49,24 +58,24 @@ jest.mock('vue-router', () => ({
   })
 }));
 
-// Mock für PopupEventBus
+// Mock for PopupEventBus
 jest.mock('@/utils/popupEventBus', () => ({
   PopupState: {
     activePopup: null
   }
 }));
 
-// Importiere die Komponente selbst
+// Import the component itself
 import { shallowMount } from '@vue/test-utils';
 import GameView from '@/views/GameView.vue';
 
 describe('GameView.vue', () => {
-  test('Komponente rendert ohne Fehler', () => {
-    // Erstelle einen flachen Mount ohne komplexe Komponenten
+  test('Component renders without errors', () => {
+    // Create a shallow mount without complex components
     const wrapper = shallowMount(GameView, {
       global: {
         stubs: {
-          // Füge alle Komponenten hinzu, die in der GameView verwendet werden
+          // Add all components used in GameView
           PokerTable: true,
           PokerHUD: true,
           StockSelector: true,
@@ -87,7 +96,7 @@ describe('GameView.vue', () => {
       }
     });
     
-    // Überprüfe, ob die Komponente existiert
+    // Check if the component exists
     expect(wrapper.exists()).toBe(true);
   });
 });

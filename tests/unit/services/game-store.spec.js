@@ -1,8 +1,29 @@
-import { setActivePinia, createPinia } from 'pinia';
-import { useGameStore } from '@/services/game-store';
-import * as gameDatabase from '@/services/game-database';
+jest.mock('@/api/firebase-api', () => ({
+  auth: {
+    currentUser: { uid: 'user123' }
+  },
+  db: {},
+  app: {}
+}));
 
-// Mock all the game database functions
+jest.mock('firebase/auth', () => ({
+  onAuthStateChanged: jest.fn((auth, callback) => {
+    callback({ uid: 'user123' });
+    return jest.fn();
+  }),
+  getAuth: jest.fn(() => ({
+    currentUser: { uid: 'user123' }
+  }))
+}));
+
+jest.mock('@/utils/popupEventBus', () => ({
+  PopupState: {
+    SUCCESS: 'SUCCESS',
+    ERROR: 'ERROR',
+    INFO: 'INFO'
+  }
+}));
+
 jest.mock('@/services/game-database', () => ({
   subscribeToGameData: jest.fn(),
   createGame: jest.fn(),
@@ -18,23 +39,23 @@ jest.mock('@/services/game-database', () => ({
   addLogEntry: jest.fn(),
   getPlayerBet: jest.fn(),
   updateData: jest.fn(),
+  deleteData: jest.fn(),
 }));
+
+import { setActivePinia, createPinia } from 'pinia';
+import { useGameStore } from '@/services/game-store';
+import * as gameDatabase from '@/services/game-database';
 
 describe('Game Store', () => {
   let store;
-
   beforeEach(() => {
-    // Clear mocks
     jest.clearAllMocks();
     
-    // Create a fresh pinia instance and make it active
     const pinia = createPinia();
     setActivePinia(pinia);
     
-    // Get a fresh store instance
     store = useGameStore();
     
-    // Mock console methods
     console.log = jest.fn();
     console.warn = jest.fn();
     console.error = jest.fn();
@@ -100,11 +121,8 @@ describe('Game Store', () => {
         gameDatabase.subscribeToGameData.mockImplementation((id, callback) => {
           callbackFunction = callback;
           return jest.fn();
-        });
+        });        await store.subscribeToGame(gameId);
 
-        await store.subscribeToGame(gameId);
-
-        // Simulate receiving game data
         const mockGameData = {
           creator: 'user-123',
           currentRound: 2,
@@ -126,7 +144,6 @@ describe('Game Store', () => {
         
         callbackFunction(mockGameData);
 
-        // Check that store state is updated correctly
         expect(store.creator).toBe('user-123');
         expect(store.currentRound).toBe(2);
         expect(store.currentPhase).toBe(3);
@@ -148,14 +165,11 @@ describe('Game Store', () => {
         gameDatabase.subscribeToGameData.mockImplementation((id, callback) => {
           callbackFunction = callback;
           return jest.fn();
-        });
+        });        await store.subscribeToGame(gameId);
 
-        await store.subscribeToGame(gameId);
-
-        // Simulate receiving null data
         callbackFunction(null);
 
-        expect(console.warn).toHaveBeenCalledWith("Game not found or no data at this path");
+        expect(console.warn).toHaveBeenCalledWith("Game not found or no data at this path - game may have been deleted");
       });
     });
 
@@ -271,10 +285,7 @@ describe('Game Store', () => {
 
         expect(gameDatabase.setPlayerPrediction).toHaveBeenCalledWith('test-game-1', 2, 'player-1', 150.5);
         expect(store.predictions['player-1']).toBe(150.5);
-      });
-
-      it('should advance phase if all players have made predictions', async () => {
-        // Mock nextPhase method
+      });      it('should advance phase if all players have made predictions', async () => {
         store.nextPhase = jest.fn();
         store.predictions['player-2'] = 155;
 
@@ -285,7 +296,6 @@ describe('Game Store', () => {
       });
 
       it('should not advance phase if not all players have made predictions', async () => {
-        // Mock nextPhase method
         store.nextPhase = jest.fn();
 
         await store.setPlayerPrediction('player-1', 150.5);
@@ -323,11 +333,8 @@ describe('Game Store', () => {
         store.highestBet = 0;
         store.pot = 0;
         store.bets = {};
-        store.folds = {};
-
-        gameDatabase.getPlayerBet.mockResolvedValue(0);
+        store.folds = {};        gameDatabase.getPlayerBet.mockResolvedValue(0);
         
-        // Mock helper methods
         store.moveToNextTurn = jest.fn();
         store.checkBettingStatus = jest.fn().mockResolvedValue(false);
         store.nextPhase = jest.fn();
@@ -407,10 +414,8 @@ describe('Game Store', () => {
       beforeEach(() => {
         store.gameId = 'test-game-1';
         store.currentRound = 2;
-        store.currentPhase = 3; // A betting phase
-        store.folds = {};
+        store.currentPhase = 3; // A betting phase        store.folds = {};
         
-        // Mock helper methods
         store.moveToNextTurn = jest.fn();
         store.checkBettingStatus = jest.fn().mockResolvedValue(false);
       });
@@ -617,17 +622,6 @@ describe('Game Store', () => {
 
         expect(gameDatabase.updatePot).not.toHaveBeenCalled();
         expect(store.pot).toBe(500);
-      });
-    });
-
-    describe('setSelectedStock', () => {
-      it('should set the selected stock', () => {
-        const stock = { symbol: 'AAPL', name: 'Apple Inc' };
-
-        store.setSelectedStock(stock);
-
-        expect(store.selectedStock).toEqual(stock);
-        expect(console.log).toHaveBeenCalledWith("setSelectedStock called with:", stock);
       });
     });
   });

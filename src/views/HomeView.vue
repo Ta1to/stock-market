@@ -30,11 +30,11 @@
               <p class="text-sm">{{ game.players.length }} Player</p>
             </div>
             <button @click="joinGame(game)" class="join-button">
-              Beitreten
+              Join
             </button>
           </div>
         </div>
-        <p v-else class="text-center text-gray-400">No public Games available with fewer than 4 players.</p>
+        <p v-else class="text-center text-gray-400">No public Games available with fewer than 2 players.</p>
       </div>
 
       <!-- Join Game Modal -->
@@ -71,7 +71,7 @@ export default {
   },
   computed: {
     filteredPublicGames() {
-      return this.publicGames.filter(game => game.players.length < 4);
+      return this.publicGames.filter(game => game.players.length < 2);
     }
   },
   methods: {

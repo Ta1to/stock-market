@@ -48,13 +48,12 @@ describe('GameWinner.vue', () => {
   afterEach(() => {
     jest.useRealTimers();
   });
-
   it('renders correctly when visible', () => {
     const wrapper = createWrapper();
     
     expect(wrapper.find('.game-winner-overlay').exists()).toBe(true);
     expect(wrapper.find('.winner-title').text()).toBe('Game Over');
-    expect(wrapper.find('.countdown-timer').text()).toContain('Returning to lobby in 30 seconds');
+    expect(wrapper.find('.countdown-timer').text()).toContain('All players returning to lobby in 30 seconds');
   });
 
   it('does not render when not visible', () => {

@@ -2,54 +2,54 @@
   <div class="game-winner-overlay" v-if="visible">
     <div class="game-winner-container">
       <h2 class="winner-title">Game Over</h2>
-      
-      <div class="countdown-timer">
-        Returning to lobby in {{ countdown }} seconds
+        <div class="countdown-timer">
+        All players returning to lobby in {{ countdown }} seconds
       </div>
-      
-      <div class="final-results">
+        <div class="final-results">
         <h3>Final Results</h3>
         
+        <!-- Loading state when no players data -->
+        <div v-if="sortedPlayers.length === 0" class="loading-state">
+          <p>Finalizing game results...</p>
+        </div>
+        
         <!-- Podium visualization -->
-        <div class="podium-container">
-          <!-- Second place -->
+        <div class="podium-container" v-else><!-- Second place -->
           <div class="podium-place second-place" v-if="sortedPlayers.length > 1">
             <div class="player-info">
               <div class="player-avatar">
-                <span class="player-initial">{{ getInitial(sortedPlayers[1].name) }}</span>
+                <span class="player-initial">{{ getInitial(sortedPlayers[1]?.name) }}</span>
               </div>
               <div class="player-details">
-                <div class="player-name" :title="sortedPlayers[1].name">{{ sortedPlayers[1].name }}</div>
-                <div class="player-chips">{{ sortedPlayers[1].chips }} chips</div>
+                <div class="player-name" :title="sortedPlayers[1]?.name">{{ sortedPlayers[1]?.name }}</div>
+                <div class="player-chips">{{ sortedPlayers[1]?.chips }} chips</div>
               </div>
             </div>
             <div class="podium-block second">2</div>
           </div>
-          
-          <!-- First place (winner) -->
-          <div class="podium-place first-place">
+            <!-- First place (winner) -->
+          <div class="podium-place first-place" v-if="sortedPlayers.length > 0">
             <div class="winner-crown">👑</div>
             <div class="player-info">
               <div class="player-avatar winner">
-                <span class="player-initial">{{ getInitial(sortedPlayers[0].name) }}</span>
+                <span class="player-initial">{{ getInitial(sortedPlayers[0]?.name) }}</span>
               </div>
               <div class="player-details">
-                <div class="player-name" :title="sortedPlayers[0].name">{{ sortedPlayers[0].name }}</div>
-                <div class="player-chips">{{ sortedPlayers[0].chips }} chips</div>
+                <div class="player-name" :title="sortedPlayers[0]?.name">{{ sortedPlayers[0]?.name }}</div>
+                <div class="player-chips">{{ sortedPlayers[0]?.chips }} chips</div>
               </div>
             </div>
             <div class="podium-block first">1</div>
           </div>
-          
-          <!-- Third place -->
+            <!-- Third place -->
           <div class="podium-place third-place" v-if="sortedPlayers.length > 2">
             <div class="player-info">
               <div class="player-avatar">
-                <span class="player-initial">{{ getInitial(sortedPlayers[2].name) }}</span>
+                <span class="player-initial">{{ getInitial(sortedPlayers[2]?.name) }}</span>
               </div>
               <div class="player-details">
-                <div class="player-name" :title="sortedPlayers[2].name">{{ sortedPlayers[2].name }}</div>
-                <div class="player-chips">{{ sortedPlayers[2].chips }} chips</div>
+                <div class="player-name" :title="sortedPlayers[2]?.name">{{ sortedPlayers[2]?.name }}</div>
+                <div class="player-chips">{{ sortedPlayers[2]?.chips }} chips</div>
               </div>
             </div>
             <div class="podium-block third">3</div>
@@ -71,11 +71,13 @@
       
       <div class="winner-message">
         {{ winnerMessage }}
-      </div>
-      
-      <button class="return-button" @click="returnToLobby">
-        Return to Lobby
+      </div>      <button class="return-button" @click="returnToLobby">
+        Return All Players to Lobby
       </button>
+      
+      <div class="auto-return-note">
+        Note: When any player clicks the button or the timer runs out, all players will be returned to the lobby automatically.
+      </div>
     </div>
   </div>
 </template>
@@ -107,16 +109,18 @@ export default {
   setup(props) {
     const router = useRouter();
     const countdown = ref(30);
-    let countdownTimer = null;
-
-    const sortedPlayers = computed(() => {
+    let countdownTimer = null;    const sortedPlayers = computed(() => {
+      // Ensure players is defined and is an array before processing
+      if (!props.players || !Array.isArray(props.players)) {
+        return [];
+      }
       return [...props.players].sort((a, b) => b.chips - a.chips);
-    });
-
-    const winnerMessage = computed(() => {
-      if (!sortedPlayers.value.length) return '';
+    });const winnerMessage = computed(() => {
+      if (!sortedPlayers.value.length) return 'Game completed';
       
       const winner = sortedPlayers.value[0];
+      if (!winner) return 'Game completed';
+      
       const runnerUp = sortedPlayers.value.length > 1 ? sortedPlayers.value[1] : null;
       
       if (runnerUp && winner.chips - runnerUp.chips < 50) {
@@ -426,6 +430,17 @@ export default {
 
 .return-button:active {
   transform: translateY(1px);
+}
+
+.auto-return-note {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: #a0a0a0;
+  font-style: italic;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.4;
 }
 
 @keyframes fadeIn {
