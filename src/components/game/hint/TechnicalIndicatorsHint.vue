@@ -211,7 +211,6 @@ export default {
       // Calculate MACD
       const macdResult = calculateMACD(prices);
       
-      // Set indicators with calculated values
       this.indicators = {
         rsi,
         macd: {

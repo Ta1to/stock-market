@@ -93,9 +93,7 @@ export default {
             isSpinning: false
           });
         }
-        
-        // Update preSelectedStock from onValue as well in case it changed
-        if (data?.stocks && data.stocks.length > 0 && !this.preSelectedStock) {
+          if (data?.stocks && data.stocks.length > 0 && !this.preSelectedStock) {
           this.preSelectedStock = data.stocks[0];
         }
         

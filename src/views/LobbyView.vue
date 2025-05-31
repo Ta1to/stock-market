@@ -177,17 +177,10 @@ export default {
 
         for (let round = 1; round <= numberOfRounds; round++) {
           const stocks = await getRandomStock(1);
-          const stockDetails = await Promise.all(
-            stocks.map(async (stock) => {
-              // Get price data
+          const stockDetails = await Promise.all(            stocks.map(async (stock) => {
               const { dates, prices } = await getStockHistory(stock.symbol);
-              // Get company description
               const companyInfo = await getStockInfo(stock.symbol);
-
-              // Get news for this stock
               const newsItems = await getStockNews(stock.symbol, 2); 
-
-              // Get technical indicators
               const technicalIndicators = await fetchTechnicalIndicators(stock.symbol);
 
               if (validateStockAPI && (!dates || !prices || dates.length === 0 || prices.length === 0 || !companyInfo)) {

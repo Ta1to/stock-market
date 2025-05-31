@@ -12,6 +12,6 @@ import '@mdi/font/css/materialdesignicons.css'
 
 // Create and configure Vue application
 createApp(App)
-  .use(router)         // Add Vue Router for navigation
-  .use(createPinia())  // Add Pinia for state management
-  .mount('#app')       // Mount the app to the DOM element with id 'app'
+  .use(router)
+  .use(createPinia())
+  .mount('#app')

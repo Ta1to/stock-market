@@ -179,28 +179,25 @@ export const useGameStore = defineStore('game', {
           import('@/router').then(({ default: router }) => {
             router.push('/');
           });
-          return;
-        }
-        // Update the game state with the received data
+          return;        }
         this.creator = data.creator;
-        this.currentRound = data.currentRound || data.round || 1;
-        this.currentPhase = (data.rounds && data.rounds[this.currentRound] && data.rounds[this.currentRound].phase) || data.phase || 1;
         this.players = data.players || [];
-        
-        // Safe access to round data with null checks
-        const currentRoundData = data.rounds && data.rounds[this.currentRound] ? data.rounds[this.currentRound] : {};
-        
-        // New addition: sync the pot from the database
-        this.pot = currentRoundData.pot || 0;
-        // NEW: Sync highestBet from database
-        this.highestBet = currentRoundData.highestBet || 0;
-        this.rounds = data.rounds || {}; 
         this.rounds = { ...this.rounds, ...data.rounds };
         
-        // Replace merging with direct assignment:
+        // Set currentRound first
+        this.currentRound = data.currentRound || data.round || 1;
+        
+        // Then get currentRoundData based on the updated currentRound
+        const currentRoundData = data.rounds && data.rounds[this.currentRound] ? data.rounds[this.currentRound] : {};
+        
+        // Now set phase and other round-specific data
+        this.currentPhase = currentRoundData.phase || data.phase || 1;
+        this.pot = currentRoundData.pot || 0;
+        this.highestBet = currentRoundData.highestBet || 0;
+        this.selectedStock = currentRoundData.selectedStock !== undefined ? currentRoundData.selectedStock : null;
+        
         const incomingPredictions = currentRoundData.predictions || {};
-        this.predictions = incomingPredictions;        // NEW: Retrieve selectedStock from the current round's data in the database.
-        this.selectedStock = currentRoundData.selectedStock !== undefined ? currentRoundData.selectedStock : null;        // Check if game has ended
+        this.predictions = incomingPredictions;
         if (data.gameEnded) {
           this.gameEnded = true;
           // Import router to navigate
@@ -208,9 +205,7 @@ export const useGameStore = defineStore('game', {
             router.push('/');
           });
           return;
-        }
-    
-        // Set the turn index from the database, if available. Otherwise, default to 0.
+        }    
         if (data.currentTurnIndex !== undefined) {
           this.currentTurnIndex = data.currentTurnIndex;
         } else {
@@ -288,8 +283,7 @@ export const useGameStore = defineStore('game', {
     /**
      * Initiates the stock selection phase for a round
      * @param {string} gameId - Unique identifier for the game
-     */
-    async startStockSelection(gameId) {
+     */    async startStockSelection() {
       if (!this.gameId) return;
         try {
         if (this.currentPhase !== 1) {
@@ -318,9 +312,7 @@ export const useGameStore = defineStore('game', {
       await dbSetPlayerPrediction(this.gameId, this.currentRound, playerId, price);
         // Immediately update the local state.
       this.predictions[playerId] = price;
-      
-      // Check if every player has predicted.
-      const allPredicted = this.players.every(p => this.predictions[p.uid] !== undefined);
+        const allPredicted = this.players.every(p => this.predictions[p.uid] !== undefined);
       if (this.currentPhase === 2 && allPredicted) {
         await this.nextPhase();
       }
@@ -371,9 +363,7 @@ export const useGameStore = defineStore('game', {
         this.setErrorMessage(`Bet must be at least equal to the highest bet of ${this.highestBet}`);
         return;
       }
-      
-      // Clear error message on successful bet
-      this.errorMessage = null;
+        this.errorMessage = null;
     
       // Calculate new chip amount
       const newChipsAmount = currentChips - amount;
@@ -623,9 +613,7 @@ export const useGameStore = defineStore('game', {
       this.roundPot = this.pot;
       
       if (activePlayers.length === 1) {
-        // Only one player left (others folded)
-        this.roundWinner = activePlayers[0];
-        // Add pot to winner's chips
+        // Only one player left (others folded)        this.roundWinner = activePlayers[0];
         await this.addChipsToPlayer(this.roundWinner.uid, this.pot);
       } else if (activePlayers.length > 1) {
         // Multiple players remain - determine winner by prediction accuracy

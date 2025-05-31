@@ -207,9 +207,7 @@ export const updatePlayerChips = async (gameId, playerId, newChipsAmount) => {
       if (player.uid === playerId) {
         return { ...player, chips: newChipsAmount };
       }
-      return player;
-    });
-    // Write the updated players array back to the database
+      return player;    });
     await writeData(playersPath, updatedPlayers);
     console.log(`Player ${playerId} chips updated to ${newChipsAmount}`);
   } catch (error) {
