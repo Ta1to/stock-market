@@ -31,17 +31,11 @@
           <div class="phase-badge">Phase: {{ gameStore.currentPhase }}</div>
         </div>
       </div>
-      
-      <!-- Visual indicator for current turn -->
-      <!-- <div v-if="gameStore.players.length" class="turn-indicator">
-        <div class="turn-label">Current Turn</div>
-        <div class="player-turn">{{ currentTurnPlayer.name || currentTurnPlayer.id }}</div>
-      </div> -->
 
       <!-- Error message display -->
       <div v-if="gameStore.errorMessage" class="error-message">
         {{ gameStore.errorMessage }}
-      </div>      <!-- StockSelector as Modal -->
+      </div>      
       <StockSelector
         :visible="gameStore.currentPhase === 1 && gameStore.currentRound <= gameStore.totalRounds"
         :gameId="route.params.id"
@@ -174,9 +168,8 @@ export default {
 
     // Local state for popup
     const showPopup = ref(false);
-    const prediction = ref(null);    // Watch for error message changes (handled by store now)
+    const prediction = ref(null);    
     watch(() => gameStore.errorMessage, () => {
-      // Error timeout is now handled by the store
     });
     
     // Watch for phase changes
@@ -188,7 +181,6 @@ export default {
       gameStore.handleRoundChange(newRound);
     });
 
-    // Watch for game end - redirect all players when game is ended
     watch(() => gameStore.gameEnded, (gameEnded) => {
       if (gameEnded) {
         console.log("Game ended detected, redirecting to lobby");
@@ -421,7 +413,6 @@ export default {
   margin-top: auto;
 }
 
-/* Make PokerTable larger */
 :deep(.poker-table) {
   width: 100% !important;
   height: 70vh !important;
@@ -437,7 +428,6 @@ export default {
   transform: scale(1.2);
 }
 
-/* Styling for error message */
 .error-message {
   color: #ff4d4f;
   background-color: rgba(255, 77, 79, 0.1);
@@ -448,7 +438,7 @@ export default {
   font-weight: bold;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   position: relative;
-  z-index: 20; /* Higher than poker table to ensure visibility */
+  z-index: 20; 
   max-width: 80%;
   margin-left: auto;
   margin-right: auto;
@@ -466,11 +456,9 @@ export default {
   }
 }
 
-/* Removed fadeOutError animation to ensure error messages stay visible */
 
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
 
-/* Responsive styles */
 @media (max-width: 768px) {
   .game-container {
     padding: 1rem;
@@ -505,7 +493,6 @@ export default {
   }
 }
 
-/* Fix for very small screens */
 @media (max-width: 480px) {
   .game-title {
     margin-bottom: 0.3rem;

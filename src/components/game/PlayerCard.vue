@@ -2,7 +2,6 @@
   <div class="player-card" :class="{ 'current-player': isCurrentTurn }">
     <!-- Player avatar section -->
     <div class="player-avatar">
-      <!-- If player.profilePicture is provided, show the image; otherwise show a default icon/text -->
       <img 
         v-if="player.profilePicture" 
         :src="player.profilePicture" 
@@ -66,14 +65,10 @@ export default {
   transition: background-color 0.3s, border 0.3s;
 }
 
-/* Highlight the current user with a yellow border or background */
 .current-player {
   border: 2px solid yellow;
-  /* Alternatively, you might want to change the background-color */
-  /* background-color: #fdfd96; */
 }
 
-/* Avatar section */
 .player-avatar {
   width: 50px;
   height: 50px;

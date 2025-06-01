@@ -14,7 +14,8 @@
         </div>
         
         <!-- Podium visualization -->
-        <div class="podium-container" v-else><!-- Second place -->
+        <div class="podium-container" v-else>
+          <!-- Second place -->
           <div class="podium-place second-place" v-if="sortedPlayers.length > 1">
             <div class="player-info">
               <div class="player-avatar">
@@ -27,7 +28,7 @@
             </div>
             <div class="podium-block second">2</div>
           </div>
-            <!-- First place (winner) -->
+          <!-- First place (winner) -->
           <div class="podium-place first-place" v-if="sortedPlayers.length > 0">
             <div class="winner-crown">👑</div>
             <div class="player-info">
@@ -41,7 +42,7 @@
             </div>
             <div class="podium-block first">1</div>
           </div>
-            <!-- Third place -->
+          <!-- Third place -->
           <div class="podium-place third-place" v-if="sortedPlayers.length > 2">
             <div class="player-info">
               <div class="player-avatar">

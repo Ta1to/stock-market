@@ -1,12 +1,10 @@
 <template>
     <div class="poker-table" :class="{ 'many-players': hasManyPlayers }">
-      <!-- Elliptical table surface -->
       <div class="table-surface"></div>
-  
       <!-- Display the pot in the center of the table -->
       <div class="pot-display">
         Pot: {{ pot }}
-      </div>      <!-- Render each player around the ellipse -->
+      </div>      
       <PlayerCard
         v-for="(player, index) in players"
         :key="player.id"
@@ -15,16 +13,15 @@
         :style="getPositionStyle(index, players.length)"
       />
 
-      <!-- Redesigned chip stacks directly on table -->
       <div 
         v-for="(player, index) in players" 
         :key="`bet-${player.id}`" 
         class="player-bet"
         :style="getBetPositionStyle(index, players.length)"
       >
-        <!-- Show chips for active bets -->
+        <!-- show chips for active bets -->
         <div v-if="getPlayerBet(player.uid) > 0" class="chip-stack">
-          <!-- Generate chip stack based on bet amount -->
+          <!-- generate chip stack based on bet amount -->
           <div 
             v-for="(chip, chipIndex) in generateChipStack(getPlayerBet(player.uid))" 
             :key="chipIndex"
@@ -35,12 +32,12 @@
           <div class="bet-amount">{{ getPlayerBet(player.uid) }}</div>
         </div>
         
-        <!-- Folded indicator -->
+        <!-- folded indicator -->
         <div v-else-if="hasPlayerFolded(player.uid)" class="fold-indicator">
           Folded
         </div>
         
-        <!-- Empty bet space -->
+        <!-- empty bet space -->
         <div v-else class="empty-bet"></div>
       </div>
     </div>
@@ -85,18 +82,15 @@
         return this.players[this.currentTurnIndex];
       },
       
-      // Determine if there are many players for CSS class conditionals
       hasManyPlayers() {
         return this.players.length > 6;
       },
       
-      // Determine if the screen is larger than 1920px
       isLargeScreen() {
         return window.innerWidth > 1920;
       }
     },
     
-    // Listen to resize events to update responsiveness
     mounted() {
       window.addEventListener('resize', this.handleResize);
     },
@@ -130,24 +124,17 @@
         const playerBetData = currentRoundData.bets[playerId];
         return playerBetData.folded === true;
       },
-        /**
-       * Positions each player around an ellipse by dividing 360 degrees
-       * among totalPlayers. Dynamically adjusts positions based on player count.
-       */      getPositionStyle(index, totalPlayers) {
-        // Add an angle offset for odd numbers of players to better balance the table
+      getPositionStyle(index, totalPlayers) {
         const angleOffset = totalPlayers % 2 === 1 ? 180 / totalPlayers : 0;
         const angle = (360 / totalPlayers) * index + angleOffset;
         
-        // Check if we're on a large screen (>1920px width)
         const isLargeScreen = window.innerWidth > 1920;
         
-        // Base radii and centers - adjust for screen size
         let radiusX = isLargeScreen ? 480 : 380; // horizontal radius
         let radiusY = isLargeScreen ? 200 : 150; // vertical radius
-        const centerX = isLargeScreen ? 450 : 350; // half of .poker-table width
-        const centerY = isLargeScreen ? 200 : 150; // half of .poker-table height
+        const centerX = isLargeScreen ? 450 : 350; 
+        const centerY = isLargeScreen ? 200 : 150; 
         
-        // Adjust radii based on player count to prevent overcrowding
         if (totalPlayers > 7) {
           radiusX = isLargeScreen ? 500 : 400;
           radiusY = isLargeScreen ? 210 : 160;
@@ -160,7 +147,6 @@
         const x = centerX + radiusX * Math.cos(rad);
         const y = centerY + radiusY * Math.sin(rad);
         
-        // Apply scale transformation for many players to prevent overlap
         const scale = totalPlayers > 7 ? (isLargeScreen ? 0.9 : 0.85) : 1;
         
         return {
@@ -170,22 +156,19 @@
           transform: `translate(-50%, -50%) scale(${scale})`,
         }
       },      getBetPositionStyle(index, totalPlayers) {
-        // Use the same angle offset as the player positions for consistency
         const angleOffset = totalPlayers % 2 === 1 ? 180 / totalPlayers : 0;
         const angle = (360 / totalPlayers) * index + angleOffset;
         
-        // Check if we're on a large screen (>1920px width)
         const isLargeScreen = window.innerWidth > 1920;
         
-        // Position bets closer to the center than players - adjust for screen size
-        let radiusX = isLargeScreen ? 300 : 255; // less than player position radiusX
-        let radiusY = isLargeScreen ? 100 : 60; // less than player position radiusY
-        const centerX = isLargeScreen ? 450 : 350; // half of table width
-        const centerY = isLargeScreen ? 160 : 125; // adjusted for better appearance
+        let radiusX = isLargeScreen ? 300 : 255; 
+        let radiusY = isLargeScreen ? 100 : 60; 
+        const centerX = isLargeScreen ? 450 : 350; 
+        const centerY = isLargeScreen ? 160 : 125; 
         
         // Adjust bet positions based on player count
         if (totalPlayers > 7) {
-          radiusX = isLargeScreen ? 270 : 220; // Move closer to center with more players
+          radiusX = isLargeScreen ? 270 : 220; 
           radiusY = isLargeScreen ? 90 : 80;
         } else if (totalPlayers > 4) {
           radiusX = isLargeScreen ? 280 : 230;
@@ -312,7 +295,6 @@
     margin: 0 auto;
   }
 
-  /* Redesigned chip style to match PokerHUD */
   .poker-chip {
     position: absolute;
     width: 40px;
@@ -321,10 +303,9 @@
     left: 50%;
     transform: translateX(-50%);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.8);
-    border: 2px dashed white; /* Add white dashed border like in PokerHUD */
-    outline: none; /* Remove previous outline */
+    border: 2px dashed white; 
+    outline: none; 
   }
-  /* Chip stacking with better 3D perspective - keep existing positioning */
   .poker-chip:nth-child(2) { bottom: 3px; }
   .poker-chip:nth-child(3) { bottom: 6px; }
   .poker-chip:nth-child(4) { bottom: 9px; }
@@ -337,7 +318,6 @@
   .poker-chip:nth-child(11) { bottom: 30px; }
   .poker-chip:nth-child(12) { bottom: 33px; }
   
-  /* Additional chip positions for larger screens */
   .poker-chip:nth-child(13) { bottom: 36px; }
   .poker-chip:nth-child(14) { bottom: 39px; }
   .poker-chip:nth-child(15) { bottom: 42px; }
@@ -345,12 +325,10 @@
   .poker-chip:nth-child(17) { bottom: 48px; }
   .poker-chip:nth-child(18) { bottom: 51px; }
 
-  /* Remove previous chip pattern styling and use simple dashed border instead */
   .poker-chip::before {
     display: none;
   }
 
-  /* Update chip colors while keeping radial gradients */
   .gold-chip {
     background: radial-gradient(circle at center, #ffd700 0%, #b8860b 100%);
     border-color: white;
@@ -371,7 +349,6 @@
     border-color: white;
   }
 
-  /* Improved bet amount display without background */
   .bet-amount {
     position: absolute;
     bottom: -22px;
@@ -400,13 +377,9 @@
     height: 8px;
     opacity: 0.1;
   }
-  /* Highlight the current user with a yellow border or background */
   .current-player {
     border: 2px solid yellow;
-    /* Alternatively, you might want to change the background-color */
-    /* background-color: #fdfd96; */
-  }  /* Responsive adjustments for different screen sizes */
-  /* For larger screens (over 1920px) */
+  }  
   @media (min-width: 1921px) {
     .poker-table {
       width: 900px;
@@ -435,9 +408,6 @@
       font-size: 16px;
     }
   }  
-  /* For medium screens (standard 1080p remains unchanged) */
-  
-  /* For smaller screens */
   @media (max-width: 768px) {
     .poker-table {
       width: 560px;
@@ -482,9 +452,7 @@
       font-size: 12px;
     }
   }
-  
-  /* Class for smaller chips when there are many players */
-  .poker-table.many-players .poker-chip {
+    .poker-table.many-players .poker-chip {
     width: 30px;
     height: 6px;
   }

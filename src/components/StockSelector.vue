@@ -86,7 +86,7 @@ export default {
       onValue(roundRef, (snapshot) => {
         const data = snapshot.val();
         
-        // If we have no data for this round yet, we need to initialize it for spinning
+        // If there is no data for this round yet, initialize it for spinning
         if (!data && this.isCreator) {
           updateData(`games/${this.gameId}/rounds/${this.roundNumber}`, {
             phase: 1,
@@ -100,7 +100,6 @@ export default {
         if (data?.isSpinning && !this.spinning) {
           this.startSpinAnimation();
         } else if (!data?.isSpinning && this.spinning) {
-          // Only pass the stock info needed for display, not the full object
           this.stopSpinAnimation();
         }
       });

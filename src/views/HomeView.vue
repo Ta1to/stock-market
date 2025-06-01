@@ -169,7 +169,7 @@ export default {
           createdAt: new Date().toISOString(),
           code: gameId,
           isPublic: this.isGamePublic,
-          state: 'waiting', // or "not-started"
+          state: 'waiting', 
           currentRound: 1,
           totalRounds: 3,
 

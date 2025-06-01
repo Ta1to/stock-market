@@ -41,7 +41,6 @@ export const getCompanyInfo = async (symbol) => {
       logError(warning, 'CompanyAPI:RateLimit');
     }
 
-    // Verify we got the requested symbol data
     if (response.data.Symbol && response.data.Symbol !== symbol) {
       const error = new Error(`Symbol mismatch: requested ${symbol}, received ${response.data.Symbol}`);
       logError(error, 'CompanyAPI');

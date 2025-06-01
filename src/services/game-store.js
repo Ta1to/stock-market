@@ -251,7 +251,8 @@ export const useGameStore = defineStore('game', {
 
       if (currentPhase < totalPhases) {
         newPhase = currentPhase + 1;
-      } else {        // New round: reset selectedStock so the creator can choose stock for new round
+      } else {        
+        // New round: reset selectedStock so the creator can choose stock for new round
         newRound = currentRound + 1;
         newPhase = 1;
         this.selectedStock = null;
@@ -272,7 +273,6 @@ export const useGameStore = defineStore('game', {
       this.folds = {};
       this.highestBet = 0;
       
-      // Nur bei einer neuen Runde den Pot zurücksetzen
       if (newRound > currentRound) {
         this.pot = 0;
       }
@@ -427,7 +427,8 @@ export const useGameStore = defineStore('game', {
         return false;
       }
 
-      const activePlayers = this.players.filter((p) => !this.folds[p.uid]);      // If only one player remains, award the pot, reset pot and highestBet, and end the round.
+      const activePlayers = this.players.filter((p) => !this.folds[p.uid]);      
+      // If only one player remains, award the pot, reset pot and highestBet, and end the round.
       if (activePlayers.length <= 1) {
           const winner = activePlayers[0];          const newChips = winner.chips + this.pot;
           await updatePlayerChips(this.gameId, winner.uid, newChips);
@@ -494,7 +495,7 @@ export const useGameStore = defineStore('game', {
         if (iterations > totalPlayers) {
           break;
         }
-      } while (this.folds[this.players[nextIndex].uid]); // use uid if that's your field
+      } while (this.folds[this.players[nextIndex].uid]); 
     
       this.currentTurnIndex = nextIndex;
       // Save the updated turn index to Firebase
@@ -585,7 +586,7 @@ export const useGameStore = defineStore('game', {
       if (message) {
         this.errorTimeout = setTimeout(() => {
           this.errorMessage = null;
-        }, 5000); // 5 seconds
+        }, 5000); 
       }
     },
     
@@ -613,7 +614,7 @@ export const useGameStore = defineStore('game', {
       this.roundPot = this.pot;
       
       if (activePlayers.length === 1) {
-        // Only one player left (others folded)        this.roundWinner = activePlayers[0];
+        // Only one player left (others folded)        
         await this.addChipsToPlayer(this.roundWinner.uid, this.pot);
       } else if (activePlayers.length > 1) {
         // Multiple players remain - determine winner by prediction accuracy
@@ -686,7 +687,7 @@ export const useGameStore = defineStore('game', {
           } catch (error) {
             console.error("Error deleting game:", error);
           }
-        }, 35000); // 35 seconds - slightly longer than the countdown timer
+        }, 35000); 
         
       } catch (error) {
         console.error("Error marking game as ended:", error);
