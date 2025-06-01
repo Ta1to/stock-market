@@ -2,6 +2,10 @@
 
 A multiplayer stock market game that combines poker-style betting with stock price predictions. Players compete by predicting stock prices and betting on their predictions in a poker-like environment.
 
+## Live Demo
+
+You can access the live application at: [https://stock-poker.eu](https://stock-poker.eu)
+
 ## Features
 
 - Real-time multiplayer gameplay with private/public game lobbies
